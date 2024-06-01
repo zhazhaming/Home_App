@@ -1,0 +1,31 @@
+server:
+  port: 8009
+  max-http-header-size: 10240000
+  servlet:
+    context-path: /
+
+  tomcat:
+    remote-ip-header: x-forwarded-for
+    protocol-header: x-forwarded-proto
+    port-header: X-Forwarded-Port
+    use-forward-headers: true
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/movie?serverTimezone=GMT%2B8
+    username: root
+    password:
+
+  redis:
+    host:
+    port: 6379
+    password:
+    database: 0
+
+  rabbitmq:
+    host:
+    port:  5672
+    virtual-host:
+    username: root
+    password:
