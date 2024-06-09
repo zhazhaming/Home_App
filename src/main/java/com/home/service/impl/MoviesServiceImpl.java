@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.home.entity.Movies;
 import com.home.mapper.MovieMapper;
 import com.home.service.MovieService;
+import com.home.utils.LogUtils;
+import lombok.extern.java.Log;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,7 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
 
     @Override
     public List<Movies> getAllMovies(Integer pageNum, Integer pageSize) {
+        LogUtils.info ("Service层-获取电影列表，pageNum:{},pageSize:{}",pageNum,pageSize);
         Integer movieNumber = getNumber ( );
         if (pageSize<0){
             pageSize = 10;
@@ -37,20 +40,25 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
         wrapperMovie.select ().orderByDesc ("date");
         baseMapper.selectPage (moviesPage, wrapperMovie);
         List<Movies> MovieList = moviesPage.getRecords ( );
+        LogUtils.info ("Service层-获取电影列表数据量{}，数据列表:{}",MovieList.size (),MovieList);
         return MovieList;
         }
 
     @Override
     public List<Movies> getMoviesByName(String name) {
-        if (StringUtils.isBlank (name)) return Collections.emptyList ();
+        LogUtils.info ("Service层-根据电影名获取电影名称，name:{}",name);
+        if (StringUtils.isBlank (name)) {
+            LogUtils.warn ("电影名称为空,返回了空列表");
+            return Collections.emptyList ();
+        }
         List<Movies> MovieList = this.list (new LambdaQueryWrapper<Movies> ( ).like (Movies::getName, name));
-        Movies movies = this.getOne (new LambdaQueryWrapper<Movies> (  ).eq (Movies::getName, name));
-        System.out.println (movies );
+        LogUtils.info ("Service层-根据电影名获取电影数据:{}",MovieList);
         return MovieList;
     }
 
     public Integer getNumber(){
         int count = this.count (new LambdaQueryWrapper<> ( ));
+        LogUtils.info ("获取到数据库中的电影数量为:{}",count);
         return count;
     }
 }
