@@ -3,6 +3,8 @@ package com.home.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.home.entity.Movies;
 
+import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -15,4 +17,5 @@ public interface MovieService extends IService<Movies> {
 
     public List<Movies> getMoviesByName(String name);
 
+    public List<Movies> getMoviesByTime(Integer pageNum, Integer pageSize, LocalDate startDate, LocalDate endDate);
 }

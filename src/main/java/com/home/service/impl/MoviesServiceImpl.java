@@ -4,15 +4,17 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.home.Enum.PageEnum;
 import com.home.entity.Movies;
 import com.home.mapper.MovieMapper;
 import com.home.service.MovieService;
 import com.home.utils.LogUtils;
-import lombok.extern.java.Log;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -25,17 +27,10 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
     @Override
     public List<Movies> getAllMovies(Integer pageNum, Integer pageSize) {
         LogUtils.info ("Service层-获取电影列表，pageNum:{},pageSize:{}",pageNum,pageSize);
-        Integer movieNumber = getNumber ( );
-        if (pageSize<0){
-            pageSize = 10;
-        }
-        if (pageSize>movieNumber){
-            pageSize = movieNumber;
-        }
-        if (movieNumber/pageSize<pageNum){
-            pageNum = movieNumber/pageSize;
-        }
-        Page<Movies> moviesPage = new Page<> (pageNum,pageSize);
+        Integer movieNumber = getTotalNumber ( );
+        Integer movicePageSize = getPageSize (pageSize, movieNumber);
+        Integer pageNumber = getPageNumber (movicePageSize, pageNum, movieNumber);
+        Page<Movies> moviesPage = new Page<> (pageNumber,movicePageSize);
         QueryWrapper<Movies> wrapperMovie = new QueryWrapper<Movies>();
         wrapperMovie.select ().orderByDesc ("date");
         baseMapper.selectPage (moviesPage, wrapperMovie);
@@ -56,9 +51,46 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
         return MovieList;
     }
 
-    public Integer getNumber(){
+    @Override
+    public List<Movies> getMoviesByTime(Integer pageNum, Integer pageSize, LocalDate startDate, LocalDate endDate) {
+        LogUtils.info ("Service层-根据时间获取电影列表，pageNum:{},pageSize:{},startDate:{},endDate:{}",pageNum,pageSize,startDate,endDate);
+        Integer movieNumber = getTotalNumber ( );
+        Integer movicePageSize = getPageSize (pageSize, movieNumber);
+        Integer pageNumber = getPageNumber (movicePageSize, pageNum, movieNumber);
+        Page<Movies> moviesPage = new Page<> (pageNumber, movicePageSize);
+        QueryWrapper<Movies> wrapperMovie = new QueryWrapper<Movies>();
+        wrapperMovie.select ().between ("date",startDate,endDate).orderByDesc ("date");
+        baseMapper.selectPage (moviesPage, wrapperMovie);
+        List<Movies> moviesList = moviesPage.getRecords ( );
+        LogUtils.info ("Service层-根据时间获取电影列表数量:{},数据列表:{}",moviesList.size (),moviesList);
+        return moviesList;
+    }
+
+    public Integer getTotalNumber(){
         int count = this.count (new LambdaQueryWrapper<> ( ));
         LogUtils.info ("获取到数据库中的电影数量为:{}",count);
         return count;
     }
+
+    public Integer getPageSize(Integer pageSize, Integer pageTotal){
+        if (pageSize<0){
+            pageSize = PageEnum.PAGE_MOVICE.getPageSize ();
+        }
+        if (pageSize>pageTotal){
+            pageSize = pageTotal;
+        }
+        return pageSize;
+    }
+
+    public Integer getPageNumber(Integer pageSize, Integer pageNum, Integer pageTotal){
+        if (pageNum<0){
+            pageNum = PageEnum.PAGE_MOVICE.getPageNumber ();
+        }
+        if (pageTotal/pageSize<pageNum){
+            pageNum = pageTotal/pageSize;
+        }
+        return pageNum;
+    }
+
+
 }

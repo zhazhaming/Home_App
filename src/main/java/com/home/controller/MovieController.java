@@ -7,8 +7,11 @@ import com.home.service.MovieService;
 import com.home.utils.LogUtils;
 import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -37,5 +40,14 @@ public class MovieController {
         LogUtils.info ("用户进入电影名称查询，参数为name:{}",name);
         List<Movies> moviesByName = movieService.getMoviesByName (name);
         return R.ok(moviesByName).setCode (ResponMsg.Success.status ());
+    }
+
+    @GetMapping("/getMoviceListByTime")
+    public R<List<Movies>> getMoviceListByTime(@RequestParam Integer pageNum, @RequestParam Integer pageSize,
+                                               @RequestParam("startDate") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
+                                               @RequestParam("endDate") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate){
+        LogUtils.info ("用户进入电影时间查询，参数为pageNum:{},pageSize:{},startDate:{},endDate:{}",pageNum,pageSize,startDate,endDate);
+        List<Movies> moviesByTime = movieService.getMoviesByTime (pageNum, pageSize, startDate, endDate);
+        return R.ok(moviesByTime).setCode (ResponMsg.Success.status ());
     }
 }
