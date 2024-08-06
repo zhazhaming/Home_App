@@ -13,6 +13,7 @@ import com.home.entity.VO.UserVo;
 import com.home.mapper.UserMapper;
 import com.home.service.UserService;
 
+import com.home.utils.JWTUtils;
 import com.home.utils.JsonSerialization;
 import com.home.utils.RedisUtils;
 import com.home.utils.RestTemplateUtil;
@@ -35,6 +36,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Autowired
     public JsonSerialization jsonSerialization;
 
+    @Autowired
+    public JWTUtils jwtUtils;
+
     private static final String REDIS_KEY = "user:login:";
 
     @Override
@@ -49,16 +53,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         //查询redis中，是否包含当前key值
         String user_login_status = REDIS_KEY + user.getId ();
+        String serialize_user = jsonSerialization.serializeToJson (user);
         boolean isKeyExist = redisUtils.keyIsExist (user_login_status);
         if (isKeyExist){ // 存在则更新时间，否则走登录的方式
-            redisUtils.expire (user_login_status, 60 * 60*12);
+            redisUtils.expire (user_login_status, 60*60*12);
         }
         else {
             user.setPassword ("");
             redisUtils.set(user_login_status, jsonSerialization.serializeToJson (user), 60 * 60*12);
         }
+        //创建token
         UserVo userVo = new UserVo (  );
         BeanUtils.copyProperties (user, userVo);
+        String token = jwtUtils.generateToken (serialize_user, 60*60*12);
+        userVo.setToken (token);
         return userVo;
     }
 
