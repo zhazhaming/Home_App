@@ -11,7 +11,7 @@ import com.home.entity.VO.UserVo;
  */
 public interface UserService extends IService<User> {
 
-    public UserVo loginByPassword(UserLoginDTO userLoginDTO);
+    public UserVo loginByPassword(UserLoginDTO userLoginDTO) throws Exception;
 
     public boolean register(UserLoginDTO UserLoginDTO);
 

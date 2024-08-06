@@ -2,7 +2,7 @@ package com.home.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.home.entity.User;
-import org.mapstruct.Mapper;
+import org.apache.ibatis.annotations.Mapper;
 
 /**
  * @Author: zhazhaming

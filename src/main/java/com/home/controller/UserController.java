@@ -1,7 +1,11 @@
 package com.home.controller;
 
+import com.baomidou.mybatisplus.extension.api.R;
 import com.home.entity.DTO.UserLoginDTO;
+import com.home.entity.VO.UserVo;
+import com.home.service.impl.UserServiceImpl;
 import io.swagger.annotations.Api;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -14,9 +18,12 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("user")
 public class UserController {
 
-    @RequestMapping("/login")
-    public String login(@RequestBody UserLoginDTO userLoginDTO){
+    @Autowired
+    UserServiceImpl userService;
 
-        return "login success";
+    @PostMapping("/login")
+    public R<UserVo> login(@RequestBody UserLoginDTO userLoginDTO) throws Exception{
+        UserVo userVo = userService.loginByPassword (userLoginDTO);
+        return R.ok (userVo);
     }
 }
