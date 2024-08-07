@@ -24,9 +24,9 @@ public class User {
     @NotNull
     private int id;
 
-    @TableField("nickname")
+    @TableField("username")
     @NotNull
-    private String nickname;
+    private String username;
 
     @TableField("password")
     @NotNull

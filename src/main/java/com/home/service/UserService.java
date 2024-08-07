@@ -2,8 +2,9 @@ package com.home.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.home.entity.DTO.UserLoginDTO;
+import com.home.entity.DTO.UserRegistDTO;
 import com.home.entity.User;
-import com.home.entity.VO.UserVo;
+import com.home.entity.DTO.UserInfoDTO;
 
 /**
  * @Author: zhazhaming
@@ -11,8 +12,8 @@ import com.home.entity.VO.UserVo;
  */
 public interface UserService extends IService<User> {
 
-    public UserVo loginByPassword(UserLoginDTO userLoginDTO) throws Exception;
+    public UserInfoDTO loginByPassword(UserLoginDTO userLoginDTO) throws Exception;
 
-    public boolean register(UserLoginDTO UserLoginDTO);
+    public boolean register(UserRegistDTO userRegistDTO);
 
 }

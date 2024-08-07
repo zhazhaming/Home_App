@@ -22,6 +22,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleAllUncaughtExceptions(Exception ex, WebRequest request) {
         // 处理所有未捕获的异常
+        System.out.println ( "An unexpected error occurred: " + ex.getMessage());
         return new ResponseEntity<>("An unexpected error occurred.", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

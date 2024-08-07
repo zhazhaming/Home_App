@@ -6,16 +6,16 @@ import lombok.NoArgsConstructor;
 
 /**
  * @Author: zhazhaming
- * @Date: 2024/07/30/22:08
+ * @Date: 2024/08/07/22:18
  */
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 //接收前端的请求
-public class UserLoginDTO {
+public class UserRegistDTO {
 
-    public String nameoremail;
+    private String username;
+    private String password;
+    private String email;
 
-    public String password;
 }

@@ -2,24 +2,22 @@ package com.home.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.baomidou.mybatisplus.extension.service.additional.query.impl.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.home.Enum.ResponMsg;
 import com.home.Exception.ServiceException;
-import com.home.config.RedisConfig;
+
 import com.home.entity.DTO.UserLoginDTO;
+import com.home.entity.DTO.UserRegistDTO;
 import com.home.entity.User;
-import com.home.entity.VO.UserVo;
+import com.home.entity.DTO.UserInfoDTO;
 import com.home.mapper.UserMapper;
 import com.home.service.UserService;
 
 import com.home.utils.JWTUtils;
 import com.home.utils.JsonSerialization;
 import com.home.utils.RedisUtils;
-import com.home.utils.RestTemplateUtil;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 
@@ -42,7 +40,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private static final String REDIS_KEY = "user:login:";
 
     @Override
-    public UserVo loginByPassword(UserLoginDTO userLoginDTO) throws Exception {
+    public UserInfoDTO loginByPassword(UserLoginDTO userLoginDTO) throws Exception {
         if (StringUtils.checkValNotNull (userLoginDTO.getNameoremail ()) || StringUtils.checkValNotNull (userLoginDTO.getPassword ())){
             throw new ServiceException (ResponMsg.PARAMETER_ERROR.status (), ResponMsg.PARAMETER_ERROR.msg ());
         }
@@ -63,21 +61,32 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             redisUtils.set(user_login_status, jsonSerialization.serializeToJson (user), 60 * 60*12);
         }
         //创建token
-        UserVo userVo = new UserVo (  );
-        BeanUtils.copyProperties (user, userVo);
+        UserInfoDTO userInfoDTO = new UserInfoDTO (  );
+        BeanUtils.copyProperties (user, userInfoDTO);
         String token = jwtUtils.generateToken (serialize_user, 60*60*12);
-        userVo.setToken (token);
-        return userVo;
+        userInfoDTO.setToken (token);
+        return userInfoDTO;
     }
 
     @Override
-    public boolean register(UserLoginDTO userLoginDTO) {
-        return false;
+    public boolean register(UserRegistDTO userRegistDTO) {
+        // 查询数据是否包含这个用户
+        System.out.println (userRegistDTO );
+        User user = this.getOne (new LambdaQueryWrapper<User> ( ).eq (User::getEmail, userRegistDTO.getEmail ()));
+        System.out.println ("测试结果为："+user );
+        if (user != null){
+            throw new ServiceException(ResponMsg.USER_IS_EXIST.status (), ResponMsg.USER_IS_EXIST.msg ());
+        }
+        // 创建用户
+        User newUser = new User (  );
+        BeanUtils.copyProperties (userRegistDTO, newUser);
+        boolean save = this.save (newUser);
+        return save;
     }
 
 
     public User selectUser(String userName, String passWord){
-        User user = this.getOne (new LambdaQueryWrapper<User> ( ).eq (User::getNickname, userName).eq (User::getPassword, passWord));
+        User user = this.getOne (new LambdaQueryWrapper<User> ( ).eq (User::getUsername, userName).eq (User::getPassword, passWord));
         if (user == null) return new User (  );
         return user;
     }
