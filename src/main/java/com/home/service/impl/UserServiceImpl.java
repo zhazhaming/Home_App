@@ -15,6 +15,7 @@ import com.home.service.UserService;
 
 import com.home.utils.JWTUtils;
 import com.home.utils.JsonSerialization;
+import com.home.utils.LogUtils;
 import com.home.utils.RedisUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,9 +40,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private static final String REDIS_KEY = "user:login:";
 
+    private static final Integer USER_LOGIN_EXPIRE_TIME = 60 * 60 * 12;  //用户token过期时间
+
     @Override
     public UserInfoDTO loginByPassword(UserLoginDTO userLoginDTO) throws Exception {
-        if (StringUtils.checkValNotNull (userLoginDTO.getNameoremail ()) || StringUtils.checkValNotNull (userLoginDTO.getPassword ())){
+        LogUtils.info ("User Login ServiceImpl");
+        if (! StringUtils.checkValNotNull (userLoginDTO.getNameoremail ()) || ! StringUtils.checkValNotNull (userLoginDTO.getPassword ())){
             throw new ServiceException (ResponMsg.PARAMETER_ERROR.status (), ResponMsg.PARAMETER_ERROR.msg ());
         }
         // 查询当前用户是否存在数据库中
@@ -54,7 +58,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String serialize_user = jsonSerialization.serializeToJson (user);
         boolean isKeyExist = redisUtils.keyIsExist (user_login_status);
         if (isKeyExist){ // 存在则更新时间，否则走登录的方式
-            redisUtils.expire (user_login_status, 60*60*12);
+            redisUtils.expire (user_login_status, USER_LOGIN_EXPIRE_TIME);
         }
         else {
             user.setPassword ("");
@@ -71,9 +75,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public boolean register(UserRegistDTO userRegistDTO) {
         // 查询数据是否包含这个用户
-        System.out.println (userRegistDTO );
+        LogUtils.info ("User Regist ServiceImpl");
         User user = this.getOne (new LambdaQueryWrapper<User> ( ).eq (User::getEmail, userRegistDTO.getEmail ()));
-        System.out.println ("测试结果为："+user );
         if (user != null){
             throw new ServiceException(ResponMsg.USER_IS_EXIST.status (), ResponMsg.USER_IS_EXIST.msg ());
         }

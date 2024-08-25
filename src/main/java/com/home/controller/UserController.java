@@ -6,6 +6,7 @@ import com.home.entity.DTO.UserLoginDTO;
 import com.home.entity.DTO.UserInfoDTO;
 import com.home.entity.DTO.UserRegistDTO;
 import com.home.service.impl.UserServiceImpl;
+import com.home.utils.LogUtils;
 import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ public class UserController {
 
     @PostMapping("/login")
     public R<UserInfoDTO> login(@RequestBody UserLoginDTO userLoginDTO) throws Exception{
+        LogUtils.info ("User Login Controller");
         UserInfoDTO userInfoDTO = userService.loginByPassword (userLoginDTO);
         return R.ok (userInfoDTO);
     }
@@ -33,10 +35,10 @@ public class UserController {
     @Transactional
     @PostMapping("/regist")
     public R<Boolean> regist(@RequestBody UserRegistDTO userRegistDTO){
-        System.out.println ("进入controller层" );
+        LogUtils.info ("User Regist Controller");
         boolean register = userService.register (userRegistDTO);
         System.out.println (register );
         if (register) return R.ok (ResponMsg.USER_REGISTER_SUCCESS.success ());
-        return R.failed (ResponMsg.USER_REGISTER_FAIL.msg ());  // (ResponMsg.USER_REGISTER_FAIL.msg ()).setCode (ResponMsg.USER_REGISTER_FAIL.status ())
+        return R.failed (ResponMsg.USER_REGISTER_FAIL.msg ());
     }
 }
