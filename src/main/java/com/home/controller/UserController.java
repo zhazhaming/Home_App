@@ -29,7 +29,7 @@ public class UserController {
     public R<UserInfoDTO> login(@RequestBody UserLoginDTO userLoginDTO) throws Exception{
         LogUtils.info ("User Login Controller");
         UserInfoDTO userInfoDTO = userService.loginByPassword (userLoginDTO);
-        return R.ok (userInfoDTO);
+        return R.ok (userInfoDTO).setCode (ResponMsg.Success.status ());
     }
 
     @Transactional
@@ -38,7 +38,7 @@ public class UserController {
         LogUtils.info ("User Regist Controller");
         boolean register = userService.register (userRegistDTO);
         System.out.println (register );
-        if (register) return R.ok (ResponMsg.USER_REGISTER_SUCCESS.success ());
+        if (register) return R.ok (ResponMsg.USER_REGISTER_SUCCESS.success ()).setCode (ResponMsg.Success.status ( ));
         return R.failed (ResponMsg.USER_REGISTER_FAIL.msg ());
     }
 }
