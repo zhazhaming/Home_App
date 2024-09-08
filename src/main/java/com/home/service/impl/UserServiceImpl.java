@@ -38,7 +38,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Autowired
     public JWTUtils jwtUtils;
 
-    private static final String REDIS_KEY = "user:login:";
+    private static final String REDIS_KEY = "user:token:";
 
     private static final Integer USER_LOGIN_EXPIRE_TIME = 60 * 60 * 12;  //用户token过期时间
 
@@ -57,17 +57,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String user_login_status = REDIS_KEY + user.getId ();
         String serialize_user = jsonSerialization.serializeToJson (user);
         boolean isKeyExist = redisUtils.keyIsExist (user_login_status);
-        if (isKeyExist){ // 存在则更新时间，否则走登录的方式
+        String use_token = "";
+        // 更新redis中的数据
+        if (isKeyExist){ // 存在则更新时间，否则走密码登录的方式设置redis中的token值
+            use_token = redisUtils.get (user_login_status);
             redisUtils.expire (user_login_status, USER_LOGIN_EXPIRE_TIME);
         }
         else {
             user.setPassword ("");
-            redisUtils.set(user_login_status, jsonSerialization.serializeToJson (user), 60 * 60*12);
+            use_token = jwtUtils.generateToken (serialize_user, USER_LOGIN_EXPIRE_TIME);
+            redisUtils.set(user_login_status, use_token, USER_LOGIN_EXPIRE_TIME);
         }
-        //创建token
+        //创建前端返回值
         UserInfoDTO userInfoDTO = new UserInfoDTO (  );
         BeanUtils.copyProperties (user, userInfoDTO);
-        String token = jwtUtils.generateToken (serialize_user, 60*60*12);
+        String token = use_token;
         userInfoDTO.setToken (token);
         return userInfoDTO;
     }
