@@ -2,6 +2,7 @@ package com.home.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.home.entity.Movies;
+import io.swagger.models.auth.In;
 
 import java.time.LocalDate;
 import java.util.Date;
@@ -17,5 +18,9 @@ public interface MovieService extends IService<Movies> {
 
     public List<Movies> getMoviesByName(String name);
 
+    public Movies getMoviesById(Integer id);
+
     public List<Movies> getMoviesByTime(Integer pageNum, Integer pageSize, LocalDate startDate, LocalDate endDate);
+
+    public List<Movies> getWellReceive(Integer pageNum, Integer pageSize);
 }

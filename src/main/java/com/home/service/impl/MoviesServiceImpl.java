@@ -5,12 +5,17 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.home.Enum.PageEnum;
+import com.home.Enum.ResponMsg;
+import com.home.Exception.ServiceException;
 import com.home.entity.Movies;
 import com.home.mapper.MovieMapper;
 import com.home.service.MovieService;
 import com.home.utils.LogUtils;
+import com.home.utils.ParameterValidator;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ServerErrorException;
 
 import java.time.LocalDate;
 import java.util.Collections;
@@ -23,6 +28,9 @@ import java.util.List;
  */
 @Service
 public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  implements MovieService {
+
+    @Autowired
+    ParameterValidator parameterValidator;
 
     @Override
     public List<Movies> getAllMovies(Integer pageNum, Integer pageSize) {
@@ -52,6 +60,17 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
     }
 
     @Override
+    public Movies getMoviesById(Integer id) {
+        LogUtils.info ("Service层-根据电影ID获取电影详情，id:{}",id);
+        if (id<0){
+            LogUtils.error ("获取电影ID参数小于0");
+            throw new ServiceException (ResponMsg.PARAMETER_ERROR.status (), ResponMsg.PARAMETER_ERROR.msg ( ));
+        }
+        Movies movie = this.getOne (new LambdaQueryWrapper<Movies> ( ).eq (Movies::getId, id));
+        return movie;
+    }
+
+    @Override
     public List<Movies> getMoviesByTime(Integer pageNum, Integer pageSize, LocalDate startDate, LocalDate endDate) {
         LogUtils.info ("Service层-根据时间获取电影列表，pageNum:{},pageSize:{},startDate:{},endDate:{}",pageNum,pageSize,startDate,endDate);
         Integer movieNumber = getTotalNumber ( );
@@ -64,6 +83,12 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
         List<Movies> moviesList = moviesPage.getRecords ( );
         LogUtils.info ("Service层-根据时间获取电影列表数量:{},数据列表:{}",moviesList.size (),moviesList);
         return moviesList;
+    }
+
+    @Override
+    public List<Movies> getWellReceive(Integer pageNum, Integer pageSize) {
+
+        return null;
     }
 
     public Integer getTotalNumber(){
