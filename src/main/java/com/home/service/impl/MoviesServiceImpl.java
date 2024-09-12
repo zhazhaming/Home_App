@@ -87,7 +87,7 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
 
     @Override
     public List<Movies> getWellReceive(Integer pageNum, Integer pageSize) {
-        // 这里编写热饮的代码，hhh
+        // 这里编写热饮的代码
         return null;
     }
 
