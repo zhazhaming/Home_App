@@ -14,7 +14,9 @@ import java.util.UUID;
 /**
  * @Author: zhazhaming
  * @Date: 2024/06/08/15:40
+ * 作用： 日志添加每一个用户的唯一标识
  */
+
 public class MDCFilter extends OncePerRequestFilter {
 
     @Autowired
@@ -27,7 +29,10 @@ public class MDCFilter extends OncePerRequestFilter {
         logUtil.setRequestId(requestId);
         try {
             filterChain.doFilter(request, response);
-        } finally {
+        }catch (Exception e){
+            logUtil.error("An error occurred during request processing with requestId: {}, Exception: {}", requestId, e);
+        }
+        finally {
             logUtil.clearRequestId();
         }
     }

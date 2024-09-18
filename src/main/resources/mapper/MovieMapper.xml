@@ -14,7 +14,7 @@
     <select id="getMovieByCategory" parameterType="int" resultMap="MoviesWithGenresResultMap">
         SELECT m.*
         FROM movies m
-        LEFT JOIN movie_category mc ON mc.movie_id = m.id AND mc.category_id = #{catagoryId}
+        LEFT JOIN movie_category mc ON mc.movie_id = m.id AND mc.category_id = #{categoryId}
         GROUP BY m.id,mc.category_id
         HAVING mc.category_id IS NOT NULL;
     </select>

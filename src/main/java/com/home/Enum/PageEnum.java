@@ -6,7 +6,8 @@ package com.home.Enum;
  */
 public enum PageEnum {
 
-    PAGE_MOVICE(5,10,"电影列表");
+    PAGE_MOVICE(5,10,"电影列表"),
+    RECENT_MOVIE(1, 10, "最新电影");
 
     private Integer pageNumber;
 

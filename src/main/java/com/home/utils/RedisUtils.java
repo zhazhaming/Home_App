@@ -1,17 +1,20 @@
 package com.home.utils;
 
+import io.swagger.models.auth.In;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.StringRedisConnection;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @Author: zhazhaming
@@ -97,8 +100,14 @@ public class RedisUtils {
      * @param key
      * @param value
      */
-    public void set(String key, String value) {
-        redisTemplate.opsForValue().set(key, value);
+    public void set(String key, Object value) {
+        if (value instanceof String){
+            redisTemplate.opsForValue().set(key, (String) value);
+        }else if(value instanceof Integer){
+            redisTemplate.opsForValue ().set (key, value.toString ());
+        }else {
+            throw new IllegalArgumentException("Unsupported type: " + value.getClass().getName());
+        }
     }
 
     /**
@@ -252,5 +261,19 @@ public class RedisUtils {
      */
     public long rpush(String key, String value) {
         return redisTemplate.opsForList().rightPush(key, value);
+    }
+
+    /**
+     * 实现命令：ZREVRANGE key count，查询key值从高到低的有序集合
+     *
+     * @param key
+     * @param count
+     * @return 执行 ZREVRANGE命令后，有序集合列表。
+     */
+    public List<String> zrevrange(String key, Integer count){
+        ZSetOperations<String, String> opsForZSet = redisTemplate.opsForZSet ( );
+        Set<String> topObject = opsForZSet.reverseRange (key, 0, count - 1);
+        System.out.println (topObject.stream ().collect(Collectors.toList()) );
+        return topObject.stream ().collect(Collectors.toList());
     }
 }

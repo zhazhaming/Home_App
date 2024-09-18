@@ -2,6 +2,7 @@ package com.home.controller;
 
 import com.baomidou.mybatisplus.extension.api.R;
 import com.home.Enum.ResponMsg;
+import com.home.entity.Movie_Category;
 import com.home.entity.Movies;
 import com.home.service.MovieService;
 import com.home.utils.LogUtils;
@@ -12,7 +13,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -62,9 +62,29 @@ public class MovieController {
 
     @GetMapping("/getWellReceive")  // 热映接口
     public R<List<Movies>> getWellReceive(@RequestParam Integer pageNum, @RequestParam Integer pageSize){
-        LogUtils.info ("用户进入热饮接口，参数为pageNum{},pageSize:{}",pageNum, pageSize);
+        LogUtils.info ("用户进入热映接口，参数为pageNum{},pageSize:{}",pageNum, pageSize);
         List<Movies> movices_list = movieService.getWellReceive (pageNum, pageSize);
         return R.ok (movices_list).setCode (ResponMsg.Success.status ( ));
     }
 
+    @GetMapping("/getMovieCategory")
+    public R<List<Movie_Category>> getMovieCategory(){
+        LogUtils.info ("进入查询电影类别接口");
+        List<Movie_Category> movieCategoryList = movieService.getMovieCategory ( );
+        return R.ok (movieCategoryList).setCode (ResponMsg.Success.status ( ));
+    }
+
+    @GetMapping("/getCategoryMovies")
+    public R<List<Movies>> getMovieCategory(@RequestParam Integer categoryId){
+        LogUtils.info ("进入查询同类别电影接口");
+        List<Movies> movieCategory = movieService.getCategoryMovies (categoryId);
+        return R.ok (movieCategory).setCode (ResponMsg.Success.status ());
+    }
+
+    @GetMapping("/getMoviesRecent")
+    public R<List<Movies>> getMoviesRecent(@RequestParam Integer pageNum, @RequestParam Integer pageSize){
+        LogUtils.info ("Access MoviceRecent interface");
+        List<Movies> movieRecent = movieService.getMovieRecent (pageNum, pageSize);
+        return R.ok (movieRecent).setCode (ResponMsg.Success.status ( ));
+    }
 }

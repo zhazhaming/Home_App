@@ -10,7 +10,8 @@ public enum ResponMsg {
     PARAMETER_ERROR(501,false,"参数异常，请正确填写后重试！！"),
     USER_NOT_EXIST(502,false,"用户不存在或用户名密码错误，请检查后重试！！"),
     USER_IS_EXIST(503,false,"用户已存在，不允许再次注册！！"),
-    USER_REGISTER_FAIL(504,false, "注册失败，请联系管理员！！"),;
+    USER_REGISTER_FAIL(504,false, "注册失败，请联系管理员！！"),
+    SYS_ERROR(505,false,"系统异常，请联系管理员！！");
 
 
 
