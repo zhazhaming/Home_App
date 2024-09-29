@@ -6,6 +6,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.StringRedisConnection;
 import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Component;
@@ -180,7 +181,6 @@ public class RedisUtils {
                 return null;
             }
         });
-
         return result;
     }
 
@@ -263,17 +263,123 @@ public class RedisUtils {
         return redisTemplate.opsForList().rightPush(key, value);
     }
 
+    //set和zset
+
     /**
-     * 实现命令：ZREVRANGE key count，查询key值从高到低的有序集合
-     *
+     * 添加zset有序集合中的元素
      * @param key
-     * @param count
-     * @return 执行 ZREVRANGE命令后，有序集合列表。
+     * @param value
+     * @param score
      */
-    public List<String> zrevrange(String key, Integer count){
+    public void szset(String key, String value, double score){
+        ZSetOperations<String, String> opsForZSet = redisTemplate.opsForZSet();
+        opsForZSet.add(key, value, score);
+    }
+
+    /**
+     * 移除zset中的元素
+     * @param key
+     * @param value
+     */
+    public void rzset(String key, String value){
         ZSetOperations<String, String> opsForZSet = redisTemplate.opsForZSet ( );
-        Set<String> topObject = opsForZSet.reverseRange (key, 0, count - 1);
-        System.out.println (topObject.stream ().collect(Collectors.toList()) );
-        return topObject.stream ().collect(Collectors.toList());
+        opsForZSet.remove (key,value);
+    }
+
+    /**
+     * 更新zset中的分数
+     * @param key
+     * @param value
+     * @param delta
+     */
+    public void incrementZset(String key, String value, double delta){
+        ZSetOperations<String, String> opsForZSet = redisTemplate.opsForZSet();
+        Double currentScore = opsForZSet.score(key, value);
+        if (currentScore != null) {
+            double newScore = currentScore + delta;
+            opsForZSet.remove(key, value); // 移除旧的成员
+            opsForZSet.add(key, value, newScore); // 添加新的分数
+        }
+    }
+
+    /**
+     * 检查zset集合中是否包含指定成员。
+     * @param key
+     * @param value
+     * @return
+     */
+    public boolean containsZsetValue(String key, String value){
+        ZSetOperations<String, String> opsForZSet = redisTemplate.opsForZSet();
+        Double score = opsForZSet.score(key, value);
+        return score != null;
+    }
+
+    /**
+     * 获取zset集合中指定成员的分数。
+     * @param key
+     * @param value
+     * @return
+     */
+    public Double getZsetValue(String key, String value){
+        ZSetOperations<String, String> opsForZSet = redisTemplate.opsForZSet();
+        Double score = opsForZSet.score(key, value);
+        return score;
+    }
+
+    /**
+     * 获取zset中从低到高的元素排列
+     * @param key
+     * @param start
+     * @param end
+     * @return
+     */
+    public Set<String> gzsetReOrder(String key, long start, long end){
+        ZSetOperations<String, String> opsForZSet = redisTemplate.opsForZSet();
+        return opsForZSet.range(key, start, end);
+    }
+
+    /**
+     * 获取zset中从高到低的元素排列
+     * @param key
+     * @param start
+     * @param end
+     * @return
+     */
+    public Set<String > gzsetOrder(String key, long start, long end){
+        ZSetOperations<String, String> opsForZSet = redisTemplate.opsForZSet();
+        return opsForZSet.reverseRange (key, start, end);
+    }
+
+    /**
+     * 向set集合中添加成员。
+     *
+     * @param key   集合的键
+     * @param value 成员值
+     */
+    public void sset(String key, String value) {
+        SetOperations<String, String> opsForSet = redisTemplate.opsForSet();
+        opsForSet.add(key, value);
+    }
+
+    /**
+     * 从set集合中移除成员。
+     *
+     * @param key   集合的键
+     * @param value 成员值
+     */
+    public void rset(String key, String value) {
+        SetOperations<String, String> opsForSet = redisTemplate.opsForSet();
+        opsForSet.remove(key, value);
+    }
+
+    /**
+     * 获取set集合中的所有成员。
+     *
+     * @param key 集合的键
+     * @return 成员集合
+     */
+    public Set<String> gset(String key) {
+        SetOperations<String, String> opsForSet = redisTemplate.opsForSet();
+        return opsForSet.members(key);
     }
 }

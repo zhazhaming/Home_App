@@ -24,4 +24,17 @@
         ORDER BY date desc
         LIMIT #{number}
     </select>
+
+    <select id="getMovieByIdList" parameterType="arraylist" resultMap="MoviesWithGenresResultMap">
+        select * from movies WHERE id IN
+        <foreach item="item" index="index" collection="list" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+
+    <select id="getLastMovies" parameterType="int" resultMap="MoviesWithGenresResultMap">
+        SELECT * FROM movies
+        ORDER BY date desc
+        LIMIT #{num}
+    </select>
 </mapper>

@@ -67,6 +67,13 @@ public class MovieController {
         return R.ok (movices_list).setCode (ResponMsg.Success.status ( ));
     }
 
+    @GetMapping("/getPopular")
+    public R<List<Movies>> getPopular(@RequestParam Integer pageNum, @RequestParam Integer pageSize){
+        LogUtils.info ("用户进入最受欢迎电影接口，参数为pageNum{},pageSize:{}",pageNum, pageSize);
+        List<Movies> movices_list = movieService.getWellReceive (pageNum, pageSize);
+        return R.ok (movices_list).setCode (ResponMsg.Success.status ( ));
+    }
+
     @GetMapping("/getMovieCategory")
     public R<List<Movie_Category>> getMovieCategory(){
         LogUtils.info ("进入查询电影类别接口");

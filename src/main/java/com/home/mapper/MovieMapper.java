@@ -15,4 +15,9 @@ public interface MovieMapper extends BaseMapper<Movies> {
     List<Movies> getMovieByCategory(@Param ("categoryId") Integer categoryId);
 
     List<Movies> getMovieByTime(@Param ("number") Integer number);
+
+    List<Movies> getMovieByIdList(List<Integer> movieId);
+
+    List<Movies> getLastMovies(@Param ("num") Integer num);
+
 }

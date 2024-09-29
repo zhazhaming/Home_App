@@ -7,7 +7,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.home.Enum.PageEnum;
 import com.home.Enum.ResponMsg;
 import com.home.Exception.ServiceException;
-import com.home.config.RedisConfig;
 import com.home.entity.Movie_Category;
 import com.home.entity.Movies;
 import com.home.mapper.MovieCategoryMapper;
@@ -16,15 +15,17 @@ import com.home.service.MovieService;
 import com.home.utils.LogUtils;
 import com.home.utils.ParameterValidator;
 import com.home.utils.RedisUtils;
+import io.swagger.models.auth.In;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * @Author: zhazhaming
@@ -46,6 +47,8 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
     private MovieMapper movieMapper;
 
     private static String MOVIE_REDIS_SEARCH_KEY = "movie:search:";
+
+    private static String MOVIE_REDIS_ORDER_KEY = "movie:order";
 
     /*
         查询所有电影
@@ -99,8 +102,13 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
             String movie_key = MOVIE_REDIS_SEARCH_KEY+id.toString ();
             if (redisUtils.keyIsExist (movie_key)){
                 redisUtils.increment (movie_key, 1);
-            }else {
+            } else {
                 redisUtils.set (movie_key, 1);
+            }
+            if (redisUtils.containsZsetValue (MOVIE_REDIS_ORDER_KEY, id.toString ())){
+                redisUtils.incrementZset (MOVIE_REDIS_ORDER_KEY, id.toString (), 1);
+            } else{
+                redisUtils.szset (MOVIE_REDIS_ORDER_KEY, id.toString (), 1);
             }
         }
         return movie;
@@ -132,9 +140,55 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
     @Override
     public List<Movies> getWellReceive(Integer pageNum, Integer pageSize) {
         // 这里编写热映的代码
-        List<String> zrevrange = redisUtils.zrevrange (MOVIE_REDIS_SEARCH_KEY, pageNum * pageSize);
-        System.out.println (zrevrange );
-        return Collections.emptyList ();
+        if (pageNum*pageSize<=0){
+            throw new ServiceException (ResponMsg.PARAMETER_ERROR.status (), ResponMsg.PARAMETER_ERROR.msg ());
+        }
+        // 获取最新电影
+        List<Movies> lastMovieList = getLastMovie (pageNum * pageSize);
+        HashMap<Movies, Double> movieMap = new HashMap<> (  );
+        for (Movies movies:lastMovieList){
+            Integer moviesId = movies.getId ( );
+            if (redisUtils.containsZsetValue (MOVIE_REDIS_ORDER_KEY, moviesId.toString ())){
+                Double score = redisUtils.getZsetValue (MOVIE_REDIS_ORDER_KEY, moviesId.toString ());
+                movieMap.put (movies, score);
+            }else {
+                movieMap.put (movies, Double.valueOf ("0"));
+            }
+        }
+        // 将map根据key值排序后转化为list
+        List<Movies> moviesAllList = movieMap.entrySet ( ).stream ( ).sorted (Map.Entry.comparingByValue (Comparator.reverseOrder ())).map (Map.Entry::getKey).collect (Collectors.toList ( ));
+        // 通过steam流自定义分页算法
+        List<Movies> moviesWellList = IntStream.range (0, moviesAllList.size ()).filter (i->i>=(pageNum-1)*pageSize && i<pageNum*pageSize).mapToObj (moviesAllList::get).collect(Collectors.toList());
+        if (moviesWellList.size ()!= 0){
+            return moviesWellList;
+        }else {
+            LogUtils.warn ("get moviceWellList is zero size");
+            return Collections.emptyList ();
+        }
+    }
+
+    /**
+     * 查询最热的电影
+     * @param pageNum
+     * @param pageSize
+     * @return
+     */
+    @Override
+    public List<Movies> getPopularMovie(Integer pageNum, Integer pageSize) {
+        if (pageNum*pageSize<=0){
+            throw new ServiceException (ResponMsg.PARAMETER_ERROR.status (), ResponMsg.PARAMETER_ERROR.msg ());
+        }
+        // 获取redis zset中的有序列表
+        Set<String> stringSet = redisUtils.gzsetOrder (MOVIE_REDIS_ORDER_KEY, 0, pageNum * pageSize);
+        List<Integer> MovieIDList = stringSet.stream ( ).map (Integer::parseInt).collect (Collectors.toList ( ));  // 转成Integer类型到数据库中查找
+        if (MovieIDList.size () == 0){
+            LogUtils.error ("WellMovies interface get Movice ID is Null");
+            throw new ServiceException (ResponMsg.SYS_ERROR.status (), ResponMsg.SYS_ERROR.msg ());
+        }
+        List<Movies> movieDataList = movieMapper.getMovieByIdList (MovieIDList);
+        // 将从数据库中获取到的数据按照MovieIDList的顺序进行排序
+        List<Movies> movieWellList = changeOrder (MovieIDList, movieDataList);
+        return movieWellList;
     }
 
     /*
@@ -209,6 +263,27 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
             pageNum = pageTotal/pageSize;
         }
         return pageNum;
+    }
+
+    public List<Movies> changeOrder(List<Integer> number, List<Movies> moviesList){
+        Map<Integer, Movies> movieMap = new HashMap<> (  );
+        for (Movies movies: moviesList){
+            movieMap.put (movies.getId (), movies);
+        }
+        List<Movies> moviesListResult = new ArrayList<> (  );
+        for (Integer id: number){
+            Movies movies = movieMap.get (id);
+            if (movies != null){
+                moviesListResult.add (movies);
+            }
+        }
+        return moviesListResult;
+    }
+
+    public List<Movies> getLastMovie(Integer number){
+        // 或者最新的电影number条
+        List<Movies> lastMoviesList = movieMapper.getLastMovies (number);
+        return lastMoviesList;
     }
 
 

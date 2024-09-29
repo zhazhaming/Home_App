@@ -32,4 +32,5 @@ public interface MovieService extends IService<Movies> {
 
     public List<Movies> getMovieRecent(Integer pageNum, Integer pageSize);
 
+    public List<Movies> getPopularMovie(Integer pageNum, Integer pageSize);
 }
