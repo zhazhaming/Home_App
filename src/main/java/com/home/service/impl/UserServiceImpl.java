@@ -3,6 +3,7 @@ package com.home.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.home.Enum.ParameterEnum;
 import com.home.Enum.ResponMsg;
 import com.home.Exception.ServiceException;
 
@@ -40,7 +41,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private static final String REDIS_KEY = "user:token:";
 
-    private static final Integer USER_LOGIN_EXPIRE_TIME = 60 * 60 * 12;  //用户token过期时间
+
 
     @Override
     public UserInfoDTO loginByPassword(UserLoginDTO userLoginDTO) throws Exception {
@@ -61,12 +62,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 更新redis中的数据
         if (isKeyExist){ // 存在则更新时间，否则走密码登录的方式设置redis中的token值
             use_token = redisUtils.get (user_login_status);
-            redisUtils.expire (user_login_status, USER_LOGIN_EXPIRE_TIME);
+            redisUtils.expire (user_login_status, ParameterEnum.USER_LOGIN_EXPIRE_TIME.getParameter ());
         }
         else {
             user.setPassword ("");
-            use_token = jwtUtils.generateToken (serialize_user, USER_LOGIN_EXPIRE_TIME);
-            redisUtils.set(user_login_status, use_token, USER_LOGIN_EXPIRE_TIME);
+            use_token = jwtUtils.generateToken (serialize_user, ParameterEnum.USER_LOGIN_EXPIRE_TIME.getParameter ());
+            System.out.println ("token:" + use_token);
+            redisUtils.set(user_login_status, use_token, ParameterEnum.USER_LOGIN_EXPIRE_TIME.getParameter ());
         }
         //创建前端返回值
         UserInfoDTO userInfoDTO = new UserInfoDTO (  );

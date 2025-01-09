@@ -11,7 +11,10 @@ public enum ResponMsg {
     USER_NOT_EXIST(502,false,"用户不存在或用户名密码错误，请检查后重试！！"),
     USER_IS_EXIST(503,false,"用户已存在，不允许再次注册！！"),
     USER_REGISTER_FAIL(504,false, "注册失败，请联系管理员！！"),
-    SYS_ERROR(505,false,"系统异常，请联系管理员！！");
+    SYS_ERROR(505,false,"系统异常，请联系管理员！！"),
+    FILE_FORMAT_ERROR(506, false,"文件格式错误，请更换文件格式"),
+    FLIE_EXCEED_LIMIT(507,false,"文件过大,超过规定大小"),
+    FILE_NAME_EMPTY(508, false, "文件名不存在，请联系管理员");
 
 
 

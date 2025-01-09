@@ -23,14 +23,14 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>( r_response, HttpStatus.valueOf(ex.getErrorCode()));
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Object> handleAllUncaughtExceptions(Exception ex, WebRequest request) {
-        // 处理所有未捕获的异常
-        LogUtils.error ("An unexpected error occurred: " + ex.getMessage());
-        LogUtils.error ("unexpected error: " + ex);
-
-        R<Object> r_response= new R<> (  ).setCode (500).setMsg ("An unexpected error occurred.").setData ("");
-
-        return new ResponseEntity<>(r_response, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+//    @ExceptionHandler(Exception.class)
+//    public ResponseEntity<Object> handleAllUncaughtExceptions(Exception ex, WebRequest request) {
+//        // 处理所有未捕获的异常
+//        LogUtils.error ("An unexpected error occurred: " + ex.getMessage());
+//        LogUtils.error ("unexpected error: " + ex);
+//
+//        R<Object> r_response= new R<> (  ).setCode (500).setMsg ("An unexpected error occurred.").setData ("");
+//
+//        return new ResponseEntity<>(r_response, HttpStatus.INTERNAL_SERVER_ERROR);
+//    }
 }

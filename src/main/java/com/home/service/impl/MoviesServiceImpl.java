@@ -178,6 +178,7 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
         if (pageNum*pageSize<=0){
             throw new ServiceException (ResponMsg.PARAMETER_ERROR.status (), ResponMsg.PARAMETER_ERROR.msg ());
         }
+
         // 获取redis zset中的有序列表
         Set<String> stringSet = redisUtils.gzsetOrder (MOVIE_REDIS_ORDER_KEY, 0, pageNum * pageSize);
         List<Integer> MovieIDList = stringSet.stream ( ).map (Integer::parseInt).collect (Collectors.toList ( ));  // 转成Integer类型到数据库中查找

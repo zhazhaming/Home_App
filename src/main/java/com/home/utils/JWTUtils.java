@@ -20,7 +20,7 @@ public class JWTUtils {
     public String generateToken(String subject, long expirationTime) {
         return Jwts.builder()
                 .setSubject(subject)
-                .setIssuedAt(new Date ())
+                .setIssuedAt(new Date (System.currentTimeMillis ()))
                 .setExpiration(new Date(System.currentTimeMillis() + expirationTime * 1000))
                 .signWith(SECRET_KEY)
                 .compact();
@@ -33,8 +33,25 @@ public class JWTUtils {
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
+        }catch (io.jsonwebtoken.security.SignatureException e){
+            LogUtils.error ("Token signature does not match locally computed signature.");
         } catch (Exception e) {
-            return null;
+           LogUtils.error ("Error parsing token: " + e.getMessage());
         }
+        return null;
+    }
+
+    public String getUserFromToken(String token){
+        return validateToken (token).getSubject ();
+    }
+
+    public boolean isTokenExpired(String token){
+        Claims claims = validateToken(token);
+        if (claims == null) {
+            // Token无效或解析失败,返回错误
+            return true;
+        }
+        Date expiration = claims.getExpiration();
+        return expiration.before(new Date());
     }
 }
