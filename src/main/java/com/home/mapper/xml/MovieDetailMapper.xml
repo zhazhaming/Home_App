@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.home.mapper.MovieDetailMapper">
+
+    <resultMap id="MovieResultMap" type="com.home.entity.Movie_Detail">
+        <!-- 映射 movie_index 表的字段 -->
+        <id property="movie_id" column="movie_id" />
+        <result property="title" column="title" />
+        <result property="year" column="year" />
+        <result property="origin" column="origin" />
+        <result property="category" column="category" />
+        <result property="language" column="language" />
+        <result property="release_date" column="release_date" />
+        <result property="douban_rating" column="douban_rating" />
+        <result property="duration" column="duration" />
+        <result property="director" column="director" />
+        <result property="screenwriter" column="screenwriter" />
+        <result property="actors" column="actors" />
+        <result property="description" column="description" />
+
+    </resultMap>
+
+    <select id="getPopularMovie" resultMap="MovieResultMap">
+        SELECT
+            i.movie_id,
+            i.title,
+            i.year,
+            i.origin,
+            i.category,
+            i.language,
+            i.release_date,
+            i.douban_rating,
+            i.duration,
+            i.director,
+            i.screenwriter,
+            i.actors,
+            i.description
+        FROM
+            movie_index AS i
+        WHERE
+            i.douban_rating IS NOT NULL
+        ORDER BY
+            i.douban_rating DESC;
+    </select>
+
+</mapper>

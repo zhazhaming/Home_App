@@ -1,13 +1,13 @@
 package com.home.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.home.entity.DTO.MoiveDetailDTO;
 import com.home.entity.Movie_Category;
+import com.home.entity.Movie_Detail;
 import com.home.entity.Movies;
-import io.swagger.models.auth.In;
-import org.springframework.web.bind.annotation.RequestParam;
+
 
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -20,9 +20,13 @@ public interface MovieService extends IService<Movies> {
 
     public List<Movies> getMoviesByName(String name);
 
-    public Movies getMoviesById(Integer id);
+    public Movies getMoviesById(Integer id) throws Exception;
+
+    public MoiveDetailDTO getMovieDetailById(Integer id) throws Exception;
 
     public List<Movies> getMoviesByTime(Integer pageNum, Integer pageSize, LocalDate startDate, LocalDate endDate);
+
+    public List<Movies> getHotMovie(Integer pageNum, Integer pageSize);
 
     public List<Movies> getWellReceive(Integer pageNum, Integer pageSize);
 
@@ -32,5 +36,5 @@ public interface MovieService extends IService<Movies> {
 
     public List<Movies> getMovieRecent(Integer pageNum, Integer pageSize);
 
-    public List<Movies> getPopularMovie(Integer pageNum, Integer pageSize);
+    public List<Movie_Detail> getPopularMovie(Integer pageNum, Integer pageSize) throws Exception;
 }

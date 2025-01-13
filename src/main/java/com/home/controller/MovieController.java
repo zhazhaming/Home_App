@@ -2,7 +2,9 @@ package com.home.controller;
 
 import com.baomidou.mybatisplus.extension.api.R;
 import com.home.Enum.ResponMsg;
+import com.home.entity.DTO.MoiveDetailDTO;
 import com.home.entity.Movie_Category;
+import com.home.entity.Movie_Detail;
 import com.home.entity.Movies;
 import com.home.service.MovieService;
 import com.home.utils.LogUtils;
@@ -44,10 +46,17 @@ public class MovieController {
     }
 
     @GetMapping("/getById")
-    public R<Movies> getMoviceById(@RequestParam Integer movie_id){
+    public R<Movies> getMoviceById(@RequestParam Integer movie_id) throws Exception {
         LogUtils.info ("用户进入电影ID查询详情，movie_id:{}",movie_id);
         Movies movies = movieService.getMoviesById (movie_id);
         return R.ok (movies).setCode (ResponMsg.Success.status ( ));
+    }
+
+    @GetMapping("/detail/getById")
+    public R<MoiveDetailDTO>  getMovieDetailById(@RequestParam Integer id) throws Exception {
+        LogUtils.info ("Contrller - User enters movie ID to query details，movie_id:{}",id);
+        MoiveDetailDTO moiveDetailDTO = movieService.getMovieDetailById (id);
+        return R.ok (moiveDetailDTO).setCode (ResponMsg.Success.status ( ));
     }
 
 
@@ -67,10 +76,17 @@ public class MovieController {
         return R.ok (movices_list).setCode (ResponMsg.Success.status ( ));
     }
 
-    @GetMapping("/getPopular")
-    public R<List<Movies>> getPopular(@RequestParam Integer pageNum, @RequestParam Integer pageSize){
+    @GetMapping("/getHotMovie")
+    public R<List<Movies>> getHotMovie(@RequestParam Integer pageNum, @RequestParam Integer pageSize){
         LogUtils.info ("用户进入最受欢迎电影接口，参数为pageNum{},pageSize:{}",pageNum, pageSize);
-        List<Movies> movices_list = movieService.getWellReceive (pageNum, pageSize);
+        List<Movies> movices_list = movieService.getHotMovie (pageNum, pageSize);
+        return R.ok (movices_list).setCode (ResponMsg.Success.status ( ));
+    }
+
+    @GetMapping("/getPopular")
+    public R<List<Movie_Detail>> getPopular(@RequestParam Integer pageNum, @RequestParam Integer pageSize) throws Exception {
+        LogUtils.info ("用户进入最受欢迎电影接口，参数为pageNum{},pageSize:{}",pageNum, pageSize);
+        List<Movie_Detail> movices_list = movieService.getPopularMovie (pageNum, pageSize);
         return R.ok (movices_list).setCode (ResponMsg.Success.status ( ));
     }
 

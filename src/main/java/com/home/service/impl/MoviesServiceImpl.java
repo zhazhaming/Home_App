@@ -7,17 +7,22 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.home.Enum.PageEnum;
 import com.home.Enum.ResponMsg;
 import com.home.Exception.ServiceException;
+import com.home.entity.DTO.MoiveDetailDTO;
 import com.home.entity.Movie_Category;
+import com.home.entity.Movie_Detail;
 import com.home.entity.Movies;
 import com.home.mapper.MovieCategoryMapper;
+import com.home.mapper.MovieDetailMapper;
 import com.home.mapper.MovieMapper;
 import com.home.service.MovieService;
+import com.home.utils.JsonSerialization;
 import com.home.utils.LogUtils;
 import com.home.utils.ParameterValidator;
 import com.home.utils.RedisUtils;
 import io.swagger.models.auth.In;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.annotations.Param;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -38,10 +43,16 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
     ParameterValidator parameterValidator;
 
     @Autowired
+    public JsonSerialization jsonSerialization;
+
+    @Autowired
     RedisUtils redisUtils;
 
     @Resource
     private MovieCategoryMapper movieCategoryMapper;
+
+    @Resource
+    private MovieDetailMapper movieDetailMapper;
 
     @Autowired
     private MovieMapper movieMapper;
@@ -49,6 +60,10 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
     private static String MOVIE_REDIS_SEARCH_KEY = "movie:search:";
 
     private static String MOVIE_REDIS_ORDER_KEY = "movie:order";
+
+    private static String MOVIE_REDIS_INFO_KEY = "moviedetail:info";
+
+    private static String MOVIE_REDIS_POPULAR_KEY = "movie:popular";
 
     /*
         查询所有电影
@@ -90,34 +105,78 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
         return： Movies
      */
     @Override
-    public Movies getMoviesById(Integer id) {
+    public Movies getMoviesById(Integer id) throws Exception {
         LogUtils.info ("Service层-根据电影ID获取电影详情，id:{}",id);
         if (id<0){
             LogUtils.error ("获取电影ID参数小于0");
             throw new ServiceException (ResponMsg.PARAMETER_ERROR.status (), ResponMsg.PARAMETER_ERROR.msg ( ));
         }
-        Movies movie = this.getOne (new LambdaQueryWrapper<Movies> ( ).eq (Movies::getId, id));
+        Movies movie = new Movies (  );
         // 点击查看过的电影，添加到redis中
-        if (movie != null){
-            String movie_key = MOVIE_REDIS_SEARCH_KEY+id.toString ();
-            if (redisUtils.keyIsExist (movie_key)){
-                redisUtils.increment (movie_key, 1);
-            } else {
-                redisUtils.set (movie_key, 1);
-            }
-            if (redisUtils.containsZsetValue (MOVIE_REDIS_ORDER_KEY, id.toString ())){
-                redisUtils.incrementZset (MOVIE_REDIS_ORDER_KEY, id.toString (), 1);
-            } else{
-                redisUtils.szset (MOVIE_REDIS_ORDER_KEY, id.toString (), 1);
+        String movie_key = MOVIE_REDIS_SEARCH_KEY+id.toString ();
+        if (redisUtils.keyIsExist (movie_key)){
+            // 如果存在redis中值，则直接返回
+            LogUtils.info ("Service - Movies Id:{} Get By Redis", id);
+            String serialize_movie = redisUtils.get (movie_key);
+            movie = jsonSerialization.deserializeFromJson (serialize_movie, Movies.class);
+        } else {
+            movie = this.getOne (new LambdaQueryWrapper<Movies> ( ).eq (Movies::getId, id));
+            if (movie != null){
+                String serialize_movie = jsonSerialization.serializeToJson (movie);
+                redisUtils.set (movie_key, serialize_movie);
+                LogUtils.info ("Service - Movies Id:{} Stored On Redis", id);
+            }else {
+                LogUtils.error ("Service - No movie with ID-{} found", id);
             }
         }
-        return movie;
+        if (redisUtils.containsZsetValue (MOVIE_REDIS_ORDER_KEY, id.toString ())){
+            redisUtils.incrementZset (MOVIE_REDIS_ORDER_KEY, id.toString (), 1);
+        } else{
+            redisUtils.szset (MOVIE_REDIS_ORDER_KEY, id.toString (), 1);
+        }
+    return movie;
+    }
+
+    @Override
+    public MoiveDetailDTO getMovieDetailById(Integer id) throws Exception {
+        LogUtils.info ("Service - User enters movie ID to query details，movie_id:{}", id);
+        if (id<0){
+            LogUtils.error ("Service - error：Get movie ID parameter less than 0");
+            throw new ServiceException (ResponMsg.PARAMETER_ERROR.status (), ResponMsg.PARAMETER_ERROR.msg ( ));
+        }
+        MoiveDetailDTO moiveDetailDTO = new MoiveDetailDTO ( );
+        // 将获取到的电影详情存到redis中去
+        String movie_key = MOVIE_REDIS_INFO_KEY+id.toString ();
+        if (redisUtils.keyIsExist (movie_key)){
+            LogUtils.info ("Service - MovieDetail Id:{} Get By Redis", id);
+            String serialize_movie_detail_dto = redisUtils.get (movie_key);
+            moiveDetailDTO = jsonSerialization.deserializeFromJson (serialize_movie_detail_dto, MoiveDetailDTO.class);
+        } else {
+            Movie_Detail movie_detail = movieDetailMapper.selectOne (new LambdaQueryWrapper<Movie_Detail> ().eq (Movie_Detail::getMovie_id, id));
+            Movies movies = getMoviesById(id);
+            BeanUtils.copyProperties(movie_detail, moiveDetailDTO);
+            BeanUtils.copyProperties(movies, moiveDetailDTO);
+            moiveDetailDTO.setMovie_id (id);
+            if(movie_detail != null){
+                String serialize_movie_detail_dto = jsonSerialization.serializeToJson (moiveDetailDTO);
+                redisUtils.set (movie_key, serialize_movie_detail_dto);
+                LogUtils.info ("Service - MovieDetail Id:{} Stored On Redis", id);
+            }else {
+                LogUtils.error ("Service - No movie_detail with ID-{} found", id);
+            }
+        }
+        if (redisUtils.containsZsetValue (MOVIE_REDIS_ORDER_KEY, id.toString ())){
+            redisUtils.incrementZset (MOVIE_REDIS_ORDER_KEY, id.toString (), 1);
+        } else{
+            redisUtils.szset (MOVIE_REDIS_ORDER_KEY, id.toString (), 1);
+        }
+        return moiveDetailDTO;
     }
 
     /*
-        根据时间匹配电影
-        return： List<Movies>
-     */
+            根据时间匹配电影
+            return： List<Movies>
+         */
     @Override
     public List<Movies> getMoviesByTime(Integer pageNum, Integer pageSize, LocalDate startDate, LocalDate endDate) {
         LogUtils.info ("Service层-根据时间获取电影列表，pageNum:{},pageSize:{},startDate:{},endDate:{}",pageNum,pageSize,startDate,endDate);
@@ -174,11 +233,10 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
      * @return
      */
     @Override
-    public List<Movies> getPopularMovie(Integer pageNum, Integer pageSize) {
+    public List<Movies> getHotMovie(Integer pageNum, Integer pageSize) {
         if (pageNum*pageSize<=0){
             throw new ServiceException (ResponMsg.PARAMETER_ERROR.status (), ResponMsg.PARAMETER_ERROR.msg ());
         }
-
         // 获取redis zset中的有序列表
         Set<String> stringSet = redisUtils.gzsetOrder (MOVIE_REDIS_ORDER_KEY, 0, pageNum * pageSize);
         List<Integer> MovieIDList = stringSet.stream ( ).map (Integer::parseInt).collect (Collectors.toList ( ));  // 转成Integer类型到数据库中查找
@@ -192,9 +250,36 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
         return movieWellList;
     }
 
+    /**
+     * 最受欢迎电影（高分电影）
+     * @param pageNum
+     * @param pageSize
+     * @return
+     */
+    @Override
+    public List<Movie_Detail> getPopularMovie(Integer pageNum, Integer pageSize) throws Exception {
+        if (pageNum*pageSize<=0){
+            throw new ServiceException (ResponMsg.PARAMETER_ERROR.status (), ResponMsg.PARAMETER_ERROR.msg ());
+        }
+        List<Movie_Detail> getPorularList = new ArrayList<> (  );
+        if (redisUtils.keyIsExist (MOVIE_REDIS_POPULAR_KEY)){
+            LogUtils.info ("Service - Get PoPularMovie From Redis");
+            String serialize_porular = redisUtils.get (MOVIE_REDIS_POPULAR_KEY);
+            getPorularList = jsonSerialization.deserializeFromJson (serialize_porular, List.class);
+        }else {
+            LogUtils.info ("Service - Search PoPularMovie From Database And Set To Redis");
+            getPorularList = movieDetailMapper.getPopularMovie ();
+            String serialize_porular = jsonSerialization.serializeToJson (getPorularList);
+            redisUtils.set (MOVIE_REDIS_POPULAR_KEY, serialize_porular);
+            redisUtils.expire (MOVIE_REDIS_POPULAR_KEY, 12*60*60);
+        }
+        List<Movie_Detail> moviesPorularList  = IntStream.range (0, getPorularList.size ()).filter (i->i>=(pageNum-1)*pageSize && i<pageNum*pageSize).mapToObj (getPorularList::get).collect(Collectors.toList());
+        return moviesPorularList;
+    }
+
     /*
-        查询所有电影分类
-        return： List<Movie_Category>
+    查询所有电影分类
+    return： List<Movie_Category>
      */
     @Override
     public List<Movie_Category> getMovieCategory() {
