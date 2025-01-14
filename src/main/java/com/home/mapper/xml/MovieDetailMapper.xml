@@ -20,21 +20,9 @@
 
     </resultMap>
 
-    <select id="getPopularMovie" resultMap="MovieResultMap">
+    <select id="getPopularMovie" resultType="java.lang.Integer">
         SELECT
-            i.movie_id,
-            i.title,
-            i.year,
-            i.origin,
-            i.category,
-            i.language,
-            i.release_date,
-            i.douban_rating,
-            i.duration,
-            i.director,
-            i.screenwriter,
-            i.actors,
-            i.description
+            i.movie_id
         FROM
             movie_index AS i
         WHERE

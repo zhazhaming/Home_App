@@ -19,9 +19,7 @@ import com.home.utils.JsonSerialization;
 import com.home.utils.LogUtils;
 import com.home.utils.ParameterValidator;
 import com.home.utils.RedisUtils;
-import io.swagger.models.auth.In;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -65,13 +63,15 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
 
     private static String MOVIE_REDIS_POPULAR_KEY = "movie:popular";
 
+    private static Integer movie_redis_popular_expire_time = 24*60*60;
+
     /*
         查询所有电影
         return： List<Movies>
      */
     @Override
     public List<Movies> getAllMovies(Integer pageNum, Integer pageSize) {
-        LogUtils.info ("Service层-获取电影列表，pageNum:{},pageSize:{}",pageNum,pageSize);
+        LogUtils.info ("Service - GetAllMovieList，pageNum:{},pageSize:{}",pageNum,pageSize);
         Integer movieNumber = getTotalNumber ( );
         Integer movicePageSize = getPageSize (pageSize, movieNumber);
         Integer pageNumber = getPageNumber (movicePageSize, pageNum, movieNumber);
@@ -80,7 +80,7 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
         wrapperMovie.select ().orderByDesc ("date");
         baseMapper.selectPage (moviesPage, wrapperMovie);
         List<Movies> MovieList = moviesPage.getRecords ( );
-        LogUtils.info ("Service层-获取电影列表数据量{}，数据列表:{}",MovieList.size (),MovieList);
+        LogUtils.info ("Service - The Amount Of Movie List {}，Data:{}",MovieList.size (),MovieList);
         return MovieList;
         }
 
@@ -90,13 +90,13 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
      */
     @Override
     public List<Movies> getMoviesByName(String name) {
-        LogUtils.info ("Service层-根据电影名获取电影名称，name:{}",name);
+        LogUtils.info ("Service - Get Movie By Movie Name，name:{}",name);
         if (StringUtils.isBlank (name)) {
-            LogUtils.warn ("电影名称为空,返回了空列表");
+            LogUtils.warn ("Movie Name is Black, error");
             return Collections.emptyList ();
         }
         List<Movies> MovieList = this.list (new LambdaQueryWrapper<Movies> ( ).like (Movies::getName, name));
-        LogUtils.info ("Service层-根据电影名获取电影数据:{}",MovieList);
+        LogUtils.info ("Service - Get MovieList By Movie Name:{}",MovieList);
         return MovieList;
     }
 
@@ -106,9 +106,9 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
      */
     @Override
     public Movies getMoviesById(Integer id) throws Exception {
-        LogUtils.info ("Service层-根据电影ID获取电影详情，id:{}",id);
+        LogUtils.info ("Service - Get Movie By Id:{}",id);
         if (id<0){
-            LogUtils.error ("获取电影ID参数小于0");
+            LogUtils.error ("Service - Movie ID parameter is less than 0");
             throw new ServiceException (ResponMsg.PARAMETER_ERROR.status (), ResponMsg.PARAMETER_ERROR.msg ( ));
         }
         Movies movie = new Movies (  );
@@ -153,11 +153,11 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
             moiveDetailDTO = jsonSerialization.deserializeFromJson (serialize_movie_detail_dto, MoiveDetailDTO.class);
         } else {
             Movie_Detail movie_detail = movieDetailMapper.selectOne (new LambdaQueryWrapper<Movie_Detail> ().eq (Movie_Detail::getMovie_id, id));
-            Movies movies = getMoviesById(id);
-            BeanUtils.copyProperties(movie_detail, moiveDetailDTO);
-            BeanUtils.copyProperties(movies, moiveDetailDTO);
-            moiveDetailDTO.setMovie_id (id);
             if(movie_detail != null){
+                Movies movies = getMoviesById(id);
+                BeanUtils.copyProperties(movie_detail, moiveDetailDTO);
+                BeanUtils.copyProperties(movies, moiveDetailDTO);
+                moiveDetailDTO.setMovie_id (id);
                 String serialize_movie_detail_dto = jsonSerialization.serializeToJson (moiveDetailDTO);
                 redisUtils.set (movie_key, serialize_movie_detail_dto);
                 LogUtils.info ("Service - MovieDetail Id:{} Stored On Redis", id);
@@ -179,7 +179,7 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
          */
     @Override
     public List<Movies> getMoviesByTime(Integer pageNum, Integer pageSize, LocalDate startDate, LocalDate endDate) {
-        LogUtils.info ("Service层-根据时间获取电影列表，pageNum:{},pageSize:{},startDate:{},endDate:{}",pageNum,pageSize,startDate,endDate);
+        LogUtils.info ("Service - Get Movie List By Time，pageNum:{},pageSize:{},startDate:{},endDate:{}",pageNum,pageSize,startDate,endDate);
         Integer movieNumber = getTotalNumber ( );
         Integer movicePageSize = getPageSize (pageSize, movieNumber);
         Integer pageNumber = getPageNumber (movicePageSize, pageNum, movieNumber);
@@ -188,7 +188,7 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
         wrapperMovie.select ().between ("date",startDate,endDate).orderByDesc ("date");
         baseMapper.selectPage (moviesPage, wrapperMovie);
         List<Movies> moviesList = moviesPage.getRecords ( );
-        LogUtils.info ("Service层-根据时间获取电影列表数量:{},数据列表:{}",moviesList.size (),moviesList);
+        LogUtils.info ("Service - Get Movie Size By Time:{},Data:{}",moviesList.size (),moviesList);
         return moviesList;
     }
 
@@ -221,7 +221,7 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
         if (moviesWellList.size ()!= 0){
             return moviesWellList;
         }else {
-            LogUtils.warn ("get moviceWellList is zero size");
+            LogUtils.warn ("Service - get moviceWellList is zero size");
             return Collections.emptyList ();
         }
     }
@@ -241,7 +241,7 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
         Set<String> stringSet = redisUtils.gzsetOrder (MOVIE_REDIS_ORDER_KEY, 0, pageNum * pageSize);
         List<Integer> MovieIDList = stringSet.stream ( ).map (Integer::parseInt).collect (Collectors.toList ( ));  // 转成Integer类型到数据库中查找
         if (MovieIDList.size () == 0){
-            LogUtils.error ("WellMovies interface get Movice ID is Null");
+            LogUtils.error ("Service - WellMovies interface get Movice ID is Null");
             throw new ServiceException (ResponMsg.SYS_ERROR.status (), ResponMsg.SYS_ERROR.msg ());
         }
         List<Movies> movieDataList = movieMapper.getMovieByIdList (MovieIDList);
@@ -257,23 +257,26 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
      * @return
      */
     @Override
-    public List<Movie_Detail> getPopularMovie(Integer pageNum, Integer pageSize) throws Exception {
+    public List<Movies> getPopularMovie(Integer pageNum, Integer pageSize) throws Exception {
         if (pageNum*pageSize<=0){
             throw new ServiceException (ResponMsg.PARAMETER_ERROR.status (), ResponMsg.PARAMETER_ERROR.msg ());
         }
-        List<Movie_Detail> getPorularList = new ArrayList<> (  );
+        List<Movies> moviesList = new ArrayList<> (  );
         if (redisUtils.keyIsExist (MOVIE_REDIS_POPULAR_KEY)){
             LogUtils.info ("Service - Get PoPularMovie From Redis");
             String serialize_porular = redisUtils.get (MOVIE_REDIS_POPULAR_KEY);
-            getPorularList = jsonSerialization.deserializeFromJson (serialize_porular, List.class);
+            moviesList = jsonSerialization.deserializeFromJson (serialize_porular, List.class);
+            System.out.println (moviesList);
         }else {
             LogUtils.info ("Service - Search PoPularMovie From Database And Set To Redis");
-            getPorularList = movieDetailMapper.getPopularMovie ();
-            String serialize_porular = jsonSerialization.serializeToJson (getPorularList);
+            List<Integer> getPorularIdList = movieDetailMapper.getPopularMovie ();
+            System.out.println (getPorularIdList );
+            moviesList = getMovieByIdList (getPorularIdList);
+            String serialize_porular = jsonSerialization.serializeToJson (moviesList);
             redisUtils.set (MOVIE_REDIS_POPULAR_KEY, serialize_porular);
-            redisUtils.expire (MOVIE_REDIS_POPULAR_KEY, 12*60*60);
+            redisUtils.expire (MOVIE_REDIS_POPULAR_KEY, movie_redis_popular_expire_time);
         }
-        List<Movie_Detail> moviesPorularList  = IntStream.range (0, getPorularList.size ()).filter (i->i>=(pageNum-1)*pageSize && i<pageNum*pageSize).mapToObj (getPorularList::get).collect(Collectors.toList());
+        List<Movies> moviesPorularList  = IntStream.range (0, moviesList.size ()).filter (i->i>=(pageNum-1)*pageSize && i<pageNum*pageSize).mapToObj (moviesList::get).collect(Collectors.toList());
         return moviesPorularList;
     }
 
@@ -320,14 +323,14 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
         baseMapper.selectPage (moviesPage, wrapperMovie);
         List<Movies> movieByTimeList = moviesPage.getRecords ( );
         if (movieByTimeList.size ()< 1){
-            LogUtils.warn ("Can not search database for Recent Movie, list size is zero");
+            LogUtils.warn ("Service - Can not search database for Recent Movie, list size is zero");
         }
         return movieByTimeList;
     }
 
     public Integer getTotalNumber(){
         int count = this.count (new LambdaQueryWrapper<> ( ));
-        LogUtils.info ("获取到数据库中的电影数量为:{}",count);
+        LogUtils.info ("Service - The number of movies in the database is:{}",count);
         return count;
     }
 
@@ -370,6 +373,15 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
         // 或者最新的电影number条
         List<Movies> lastMoviesList = movieMapper.getLastMovies (number);
         return lastMoviesList;
+    }
+
+    public List<Movies> getMovieByIdList(List<Integer> list) throws Exception {
+        List<Movies> moviesList = new ArrayList<> (  );
+        for (Integer id:list) {
+            Movies movies = getMoviesById (id);
+            moviesList.add (movies);
+        }
+        return moviesList;
     }
 
 

@@ -84,9 +84,9 @@ public class MovieController {
     }
 
     @GetMapping("/getPopular")
-    public R<List<Movie_Detail>> getPopular(@RequestParam Integer pageNum, @RequestParam Integer pageSize) throws Exception {
+    public R<List<Movies>> getPopular(@RequestParam Integer pageNum, @RequestParam Integer pageSize) throws Exception {
         LogUtils.info ("用户进入最受欢迎电影接口，参数为pageNum{},pageSize:{}",pageNum, pageSize);
-        List<Movie_Detail> movices_list = movieService.getPopularMovie (pageNum, pageSize);
+        List<Movies> movices_list = movieService.getPopularMovie (pageNum, pageSize);
         return R.ok (movices_list).setCode (ResponMsg.Success.status ( ));
     }
 

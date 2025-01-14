@@ -13,6 +13,6 @@ import java.util.List;
 @Mapper
 public interface MovieDetailMapper extends BaseMapper<Movie_Detail> {
 
-    public List<Movie_Detail> getPopularMovie();
+    public List<Integer> getPopularMovie();
 
 }
