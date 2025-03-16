@@ -8,6 +8,7 @@ import com.home.entity.DTO.UserRegistDTO;
 import com.home.service.impl.UserServiceImpl;
 import com.home.utils.LogUtils;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ResponseHeader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -40,5 +41,15 @@ public class UserController {
         System.out.println (register );
         if (register) return R.ok (ResponMsg.USER_REGISTER_SUCCESS.success ()).setCode (ResponMsg.Success.status ( ));
         return R.failed (ResponMsg.USER_REGISTER_FAIL.msg ());
+    }
+
+    @PostMapping("/info")
+    public R<UserInfoDTO> GetUserInfo(@RequestParam Integer id, @RequestHeader("Authorization") String authHeader) throws Exception{
+        LogUtils.info ("Get User Info Controller");
+        UserInfoDTO userInfo = userService.getUserInfo (id, authHeader);
+        if (userInfo.getId () != null){
+            return R.ok (userInfo).setCode (ResponMsg.Success.status ( ));
+        }
+        return R.failed (ResponMsg.SYS_ERROR.msg ());
     }
 }

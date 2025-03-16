@@ -16,4 +16,6 @@ public interface UserService extends IService<User> {
 
     public boolean register(UserRegistDTO userRegistDTO);
 
+    public UserInfoDTO getUserInfo(Integer id, String token) throws Exception;
+
 }

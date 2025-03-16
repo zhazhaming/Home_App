@@ -18,14 +18,17 @@ import javax.validation.constraints.NotNull;
 public class UserInfoDTO {
 
     @NotNull
-    private String nickname;
+    private Integer id;
+
+    @NotNull
+    private String username;
 
     @NotNull
     private String email;
 
     private String phone;
 
-    private int gender;   // 0代表男生，1代表女生
+    private int gender;   // 0代表其他，1代表男生，2代表女生
 
     private String avatar;
 
