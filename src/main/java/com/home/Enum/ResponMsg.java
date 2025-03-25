@@ -6,6 +6,8 @@ public enum ResponMsg {
     USER_LOGIN_SUCCESS(200,true,"登录成功"),
     USER_REGISTER_SUCCESS(200,true,"注册成功"),
     USER_LOGIN_NULL(200,true,"未查询到用户"),
+    USER_TOKEN_EXPIRED(401, false, "登录已过期"),
+    USER_PASSWORD_FAIL(402, false, "用户密码错误"),
     Error(500,false,"请求失败，请重试！！"),
     PARAMETER_ERROR(501,false,"参数异常，请正确填写后重试！！"),
     USER_NOT_EXIST(502,false,"用户不存在或用户名密码错误，请检查后重试！！"),

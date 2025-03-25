@@ -8,7 +8,9 @@ public enum ParameterEnum {
 
     PIC_PUBLIC(0, "用户图片发布"),
     PIC_NOT_PUBLIC(1,"用户图片不发布"),
-    USER_LOGIN_EXPIRE_TIME(60*60*12,"用户token过期时间");
+    USER_LOGIN_EXPIRE_TIME_SHOT(60*60*24,"用户短效token过期时间"),  // 1day
+    USER_LOGIN_EXPIRE_TIME_LONG(60*60*24*7,"用户长效token过期时间");   // 7day
+
 
 
     private Integer parameter;

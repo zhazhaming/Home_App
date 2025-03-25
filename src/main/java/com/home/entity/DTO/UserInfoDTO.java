@@ -32,5 +32,7 @@ public class UserInfoDTO {
 
     private String avatar;
 
-    private String token;
+    private String token;  // 短期token
+
+    private String refreshToken;   //长期token
 }

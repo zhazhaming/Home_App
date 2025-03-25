@@ -12,6 +12,7 @@ import java.util.Date;
 /**
  * @Author: zhazhaming
  * @Date: 2025/01/11/17:30
+ * 数据传输对象，一般用于前后端传递
  */
 @Data
 @AllArgsConstructor

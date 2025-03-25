@@ -2,10 +2,9 @@ package com.home.utils;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.spec.SecretKeySpec;
 import java.security.Key;
 import java.util.Date;
 
@@ -15,7 +14,7 @@ import java.util.Date;
  */
 @Component
 public class JWTUtils {
-    private static final Key SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    private static final Key SECRET_KEY = new SecretKeySpec ("Home_Encrypt_The_Token_To_Enhance_Confidentiality".getBytes (  ), "HmacSHA256");  //千万不要使用Keys.secretKeyFor，否者服务器重启，这里的密钥会改变，导致token校验失败！！
 
     public String generateToken(String subject, long expirationTime) {
         return Jwts.builder()
