@@ -23,4 +23,6 @@ public interface UserService extends IService<User> {
 
     public UserInfoDTO getNewToken(Integer id) throws Exception;
 
+    public boolean logout(Integer id);
+
 }

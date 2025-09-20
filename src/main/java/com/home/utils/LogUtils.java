@@ -24,6 +24,10 @@ public class LogUtils {
         logger.warn(message, args);
     }
 
+    public static void debug(String message, Object... args) {
+        logger.debug (message, args);
+    }
+
     public static void error(String message, Object... args) {
         logger.error(message, args);
     }

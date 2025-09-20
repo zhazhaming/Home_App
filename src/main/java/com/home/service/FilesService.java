@@ -13,6 +13,6 @@ import java.io.IOException;
  */
 public interface FilesService extends IService<Files> {
 
-    public boolean uploadPic(MultipartFile file, String userInfo) throws Exception;
+    public String uploadPic(MultipartFile file) throws Exception;
 
 }

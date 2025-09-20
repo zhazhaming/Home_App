@@ -43,7 +43,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private static final String REDIS_KEY = "user:token:";
 
-    private static final String REDIS_KEY_SHOT = "user:token:shot";
+    private static final String REDIS_KEY_SHOT = "user:token:shot:";
 
     private static final String DEFAULT_AVATAR = "http://120.78.1.49/group1/M00/00/00/rBhVEWfVteKAFat3AADG2omeE7U077.jpg";
 
@@ -75,8 +75,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // redis中没有数据，重新存入redis中
         user.setPassword ("");  // 隐藏密码
         BeanUtils.copyProperties (user, userInfoDTO);
-
-        String serialize_user = jsonSerialization.serializeToJson (userInfoDTO);  //将返回对象序列化
+        //生成序列化对象（不包含token）
+        String serialize_user_init = jsonSerialization.serializeToJson (userInfoDTO);  //将返回对象序列化
+        // 用于生成临时token
+        String temp_token_shot = jwtUtils.generateToken (serialize_user_init, ParameterEnum.USER_LOGIN_EXPIRE_TIME_SHOT.getParameter ());
+        String temp_token_long = jwtUtils.generateToken (serialize_user_init, ParameterEnum.USER_LOGIN_EXPIRE_TIME_LONG.getParameter ());
+        // 设置临时token到DTO
+        userInfoDTO.setToken (temp_token_shot);
+        userInfoDTO.setRefreshToken (temp_token_long);
+        // 重新序列化（包含token信息）
+        String serialize_user = jsonSerialization.serializeToJson (userInfoDTO);
         String use_token_long = jwtUtils.generateToken (serialize_user, ParameterEnum.USER_LOGIN_EXPIRE_TIME_LONG.getParameter ());   //序列化后的对象形成长期token
         String use_token_shot = jwtUtils.generateToken (serialize_user, ParameterEnum.USER_LOGIN_EXPIRE_TIME_SHOT.getParameter ());   // 短效token返回前端
         userInfoDTO.setToken (use_token_shot);
@@ -130,15 +138,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (get_user == null){
             throw new ServiceException (ResponMsg.Success.status ( ), ResponMsg.FILE_FORMAT_ERROR.msg ( ));
         }
+        // 创建对象
+        User user = new User (  );
+        BeanUtils.copyProperties (userUpdateDTO, user);
         // 校验旧密码
         String password = get_user.getPassword ();
         String old_password = userUpdateDTO.getOldPassword ( );
-        if (! password.equals (old_password)){
-            throw new ServiceException (ResponMsg.USER_PASSWORD_FAIL.status ( ), ResponMsg.USER_PASSWORD_FAIL.msg ( ));
+        if (old_password != null){
+            // 用户修改密码
+            if (! password.equals (old_password)){
+                throw new ServiceException (ResponMsg.USER_PASSWORD_FAIL.status ( ), ResponMsg.USER_PASSWORD_FAIL.msg ( ));
+            }
+            user.setPassword (userUpdateDTO.getNewPassword ());
         }
-        User user = new User (  );
-        BeanUtils.copyProperties (userUpdateDTO, user);
-        user.setPassword (userUpdateDTO.getNewPassword ());
         boolean save = this.updateById (user);
         return save;
     }
@@ -159,6 +171,41 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return userInfoDTO;
         }
         throw new ServiceException (ResponMsg.USER_TOKEN_EXPIRED.status (), ResponMsg.USER_TOKEN_EXPIRED.msg ());
+    }
+
+    @Override
+    public boolean logout(Integer id) {
+        LogUtils.info("用户退出登录，用户ID: " + id);
+        try {
+            if (id == null) {
+                LogUtils.error("用户ID为空，无法执行退出登录");
+                return false;
+            }
+            
+            String user_login_status = REDIS_KEY + id;
+            String user_login_status_shot = REDIS_KEY_SHOT + id;
+            
+            // 删除Redis中的长效token
+            boolean longTokenDeleted = redisUtils.del(user_login_status);
+            // 删除Redis中的短效token
+            boolean shortTokenDeleted = redisUtils.del(user_login_status_shot);
+            
+            LogUtils.info("删除长效token结果: " + longTokenDeleted + ", 删除短效token结果: " + shortTokenDeleted);
+            
+            // 只要有一个删除成功就认为退出登录成功
+            boolean result = longTokenDeleted || shortTokenDeleted;
+            
+            if (result) {
+                LogUtils.info("用户退出登录成功，用户ID: " + id);
+            } else {
+                LogUtils.warn("用户退出登录失败，可能用户未登录，用户ID: " + id);
+            }
+            
+            return result;
+        } catch (Exception e) {
+            LogUtils.error("用户退出登录时发生异常，用户ID: " + id + ", 错误: " + e.getMessage(), e);
+            return false;
+        }
     }
 
     public User selectUser(String userName, String passWord){

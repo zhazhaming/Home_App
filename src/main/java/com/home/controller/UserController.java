@@ -61,9 +61,33 @@ public class UserController {
     }
 
     @PostMapping("refresh")  //更新长效token
-    public R<UserInfoDTO > GetNewToken(@RequestParam Integer id) throws Exception {
-        LogUtils.info ("Get User New Token Controller");
-        UserInfoDTO userInfoDTO = userService.getNewToken (id);
-        return R.ok (userInfoDTO).setCode (ResponMsg.Success.status ( ));
+    public R<UserInfoDTO> GetNewToken(@RequestParam Integer id) throws Exception {
+        LogUtils.info("Get User New Token Controller，用户ID: " + id);
+        try {
+            UserInfoDTO userInfoDTO = userService.getNewToken(id);
+            LogUtils.info("成功生成新token，用户ID: " + id);
+            return R.ok(userInfoDTO).setCode(ResponMsg.Success.status());
+        } catch (Exception e) {
+            LogUtils.error("获取新token失败，用户ID: " + id + ", 错误: " + e.getMessage(), e);
+            return R.failed ("获取新token失败，请重新登录");
+        }
+    }
+
+    @PostMapping("/logout")  //退出登录
+    public R<Boolean> logout(@RequestParam Integer id) {
+        LogUtils.info("User Logout Controller，用户ID: " + id);
+        try {
+            boolean result = userService.logout(id);
+            if (result) {
+                LogUtils.info("用户退出登录成功，用户ID: " + id);
+                return R.ok(true).setCode(ResponMsg.Success.status());
+            } else {
+                LogUtils.warn("用户退出登录失败，用户ID: " + id);
+                return R.failed("退出登录失败");
+            }
+        } catch (Exception e) {
+            LogUtils.error("退出登录时发生异常，用户ID: " + id + ", 错误: " + e.getMessage(), e);
+            return R.failed("退出登录失败: " + e.getMessage());
+        }
     }
 }

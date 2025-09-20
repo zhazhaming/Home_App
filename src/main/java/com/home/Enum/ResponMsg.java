@@ -17,6 +17,7 @@ public enum ResponMsg {
     FILE_FORMAT_ERROR(506, false,"文件格式错误，请更换文件格式"),
     FLIE_EXCEED_LIMIT(507,false,"文件过大,超过规定大小"),
     FILE_NAME_EMPTY(508, false, "文件名不存在，请联系管理员"),
+    FILE_UPLOAD_FAILED(510, false, "文件上传失败，请重试"),
     FAIL_USER_LOGIN_EXPIRED(509, false, "用户未登录/登录信息过期，请重新登录");
 
 

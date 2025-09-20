@@ -5,15 +5,24 @@ import com.home.Enum.ResponMsg;
 import com.home.entity.DTO.MoiveDetailDTO;
 import com.home.entity.Movie_Category;
 import com.home.entity.Movies;
+import com.home.entity.Reservation;
 import com.home.service.MovieService;
+import com.home.service.ReservationService;
+import com.home.entity.DTO.ReservationRequestDTO;
+import com.home.entity.DTO.CancelReservationRequestDTO;
 import com.home.utils.LogUtils;
+import com.home.utils.QueueMonitor;
+import com.home.utils.ResponseCache;
 import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @Author: zhazhaming
@@ -28,6 +37,15 @@ public class MovieController {
 
     @Autowired
     MovieService movieService;
+
+    @Autowired
+    ReservationService reservationService;
+
+    @Autowired
+    private QueueMonitor queueMonitor;
+
+    @Autowired
+    private ResponseCache responseCache;
 
     @GetMapping("/getMovicesList")
     public R<List<Movies>> getMovices(@RequestParam Integer pageNum,@RequestParam Integer pageSize){
@@ -108,4 +126,96 @@ public class MovieController {
         List<Movies> movieRecent = movieService.getMovieRecent (pageNum, pageSize);
         return R.ok (movieRecent).setCode (ResponMsg.Success.status ( ));
     }
+
+    @PostMapping("/reservation")
+    public R<String> reserveMovie(@RequestBody ReservationRequestDTO request) throws Exception {
+        LogUtils.info("用户提交电影预约: title:{}, email:{}, userId:{}, username:{}", request.getTitle(), request.getNotifyEmail(), request.getUserId(), request.getUsername());
+        boolean queued = reservationService.sendReservationMessage(request);
+        if (!queued) {
+            return R.ok("电影已存在or电影已经预约过，无需预约").setCode(ResponMsg.Success.status());
+        }
+        return R.ok("预约已提交").setCode(ResponMsg.Success.status());
+    }
+
+    @PostMapping("/cancelReservation")
+    public R<String> cancelReservation(@RequestBody CancelReservationRequestDTO request) throws Exception {
+        LogUtils.info("用户取消电影预约: title:{}, userId:{}, username:{}", request.getTitle(), request.getUserId(), request.getUsername());
+        boolean cancelled = reservationService.sendCancelReservationMessage(request);
+        if (!cancelled) {
+            return R.ok("预约不存在或已取消，无需操作").setCode(ResponMsg.Success.status());
+        }
+        return R.ok("取消预约已提交").setCode(ResponMsg.Success.status());
+    }
+
+    @GetMapping("/getReservation")
+    public R<List<Reservation>> getReservation(@RequestParam Integer userId, @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer pageSize) {
+        LogUtils.info("用户查询电影预约: userId:{}, page:{}, pageSize:{}", userId, page, pageSize);
+        
+        try {
+            // 设置默认值
+            if (page == null || page <= 0) {
+                page = 1;
+            }
+            if (pageSize == null || pageSize <= 0) {
+                pageSize = 20;
+            }
+            
+            // 调用Service层处理业务逻辑
+            List<Reservation> reservations = reservationService.getReservationPageById(userId, page, pageSize);
+            return R.ok(reservations).setCode(ResponMsg.Success.status());
+            
+        } catch (Exception e) {
+            LogUtils.error("查询用户预约记录失败，用户ID: {}, 错误: {}", userId, e.getMessage(), e);
+            return R.failed("查询预约记录失败: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/getReservationSize")
+    public R<Integer> getReservation(@RequestParam Integer userId) {
+        LogUtils.info("用户查询电影预约数量查询: userId:{}", userId);
+        try {
+            Integer reservationSize = reservationService.getTotalReservation (userId);
+            return R.ok(reservationSize).setCode(ResponMsg.Success.status());
+        } catch (Exception e) {
+            LogUtils.error("用户查询电影预约数量查询，用户ID: {}, 错误: {}", userId, e.getMessage(), e);
+            return R.failed("查询预约数量失败: " + e.getMessage());
+        }
+    }
+
+
+    // 模拟“新电影上线”触发，实际可在新增电影后调用
+    @PostMapping("/publishNewMovieOnline")
+    public R<String> publishNewMovieOnline(@RequestParam String title) throws Exception {
+        LogUtils.info("新电影上线触发，标题:{}，开始处理与之匹配的预约", title);
+        int processed = reservationService.consumeReservationForTitle(title);
+        return R.ok("已处理预约条数:" + processed).setCode(ResponMsg.Success.status());
+    }
+
+    @GetMapping("/reservation/status")
+    public R<java.util.Map<String, Object>> getReservationStatus() {
+        try {
+            // 获取队列状态
+            QueueMonitor.QueueStats queueStats = queueMonitor.getQueueStats();
+            
+            // 获取缓存状态
+            ResponseCache.CacheStats cacheStats = responseCache.getStats();
+            
+            // 构建状态信息
+            Map<String, Object> status = new HashMap<> ();
+            status.put("queueStats", queueStats);
+            status.put("cacheStats", cacheStats);
+            status.put("timestamp", System.currentTimeMillis());
+            
+            return R.ok (status).setCode(ResponMsg.Success.status());
+        } catch (Exception ex) {
+            LogUtils.error("获取预约状态失败: {}", ex.getMessage());
+            Map<String, Object> errorStatus = new HashMap<>();
+            errorStatus.put("error", "获取状态失败");
+            errorStatus.put("message", ex.getMessage());
+            errorStatus.put("timestamp", System.currentTimeMillis());
+            return R.ok(errorStatus).setCode(ResponMsg.Error.status());
+        }
+    }
+    
 }
+

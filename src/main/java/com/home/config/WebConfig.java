@@ -20,7 +20,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new JwtInterceptor (jwtUtils))
-                .addPathPatterns("/api/files/**"); // 只拦截文件上传接口
+                .addPathPatterns("/api/files/files**"); // 只拦截文件上传接口
 
     }
 }

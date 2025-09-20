@@ -22,6 +22,8 @@ public class UserUpdateDTO {
 
     private String newPassword;
 
+    private String email;
+
     private String phone;
 
     private Integer gender;

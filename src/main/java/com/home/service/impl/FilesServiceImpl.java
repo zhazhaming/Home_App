@@ -40,32 +40,46 @@ public class FilesServiceImpl extends ServiceImpl<FilesMapper, Files> implements
     private static final long MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
     @Override
-    @Transactional
-    public boolean uploadPic(MultipartFile file, String useInfo) throws Exception {
-        System.out.println ("进入了文件上传service层" );
-        // 检查格式
-        if (!ALLOWED_FILE_TYPES.contains(file.getContentType())) {
-            LogUtils.error ("Invalid file type. Allowed types:" + ALLOWED_FILE_TYPES);
-            throw new ServiceException (ResponMsg.FILE_FORMAT_ERROR.status (), ResponMsg.FILE_FORMAT_ERROR.msg ( ));
+    public String uploadPic(MultipartFile file) throws Exception {
+        LogUtils.info("进入了文件上传service层，文件名: " + file.getOriginalFilename());
+        
+        try {
+            // 检查格式
+            if (!ALLOWED_FILE_TYPES.contains(file.getContentType())) {
+                LogUtils.error("Invalid file type. Allowed types:" + ALLOWED_FILE_TYPES);
+                throw new ServiceException(ResponMsg.FILE_FORMAT_ERROR.status(), ResponMsg.FILE_FORMAT_ERROR.msg());
+            }
+            
+            // 检查文件大小
+            if (file.getSize() > MAX_FILE_SIZE) {
+                LogUtils.error("File size exceeds the maximum allowed size of " + MAX_FILE_SIZE + " bytes.");
+                throw new ServiceException(ResponMsg.FLIE_EXCEED_LIMIT.status(), ResponMsg.FLIE_EXCEED_LIMIT.msg());
+            }
+            
+            // 检查文件名字
+            String fileName = file.getOriginalFilename();
+            if (fileName == null || fileName.length() > 255) {
+                LogUtils.error("Invalid file name. File name must be less than 255 characters.");
+                throw new ServiceException(ResponMsg.FILE_NAME_EMPTY.status(), ResponMsg.FILE_NAME_EMPTY.msg());
+            }
+            
+            // 上传文件，并获取图片大小
+            String file_path = fileUploadUtils.uploadFile(file);
+            
+            if (file_path != null && !file_path.isEmpty()) {
+                LogUtils.info("文件上传成功，路径: " + file_path);
+                return file_path;
+            } else {
+                LogUtils.error("文件上传失败，返回路径为空");
+                throw new ServiceException(ResponMsg.FILE_UPLOAD_FAILED.status(), "文件上传失败");
+            }
+            
+        } catch (ServiceException e) {
+            // 重新抛出业务异常
+            throw e;
+        } catch (Exception e) {
+            LogUtils.error("文件上传过程中发生未知异常: " + e.getMessage(), e);
+            throw new ServiceException(ResponMsg.FILE_UPLOAD_FAILED.status(), "文件上传失败: " + e.getMessage());
         }
-        // 检查文件大小
-        if (file.getSize() > MAX_FILE_SIZE) {
-            LogUtils.error ("File size exceeds the maximum allowed size of " + MAX_FILE_SIZE + " bytes.");
-            throw new ServiceException(ResponMsg.FLIE_EXCEED_LIMIT.status (), ResponMsg.FLIE_EXCEED_LIMIT.msg ( ));
-        }
-        // 检查文件名字
-        String fileName = file.getOriginalFilename();
-        if (fileName == null || fileName.length() > 255) {
-            LogUtils.error ("Invalid file name. File name must be less than 255 characters.");
-            throw new ServiceException (ResponMsg.FILE_NAME_EMPTY.status (), ResponMsg.FILE_NAME_EMPTY.msg ( ));
-        }
-        // 上传文件，并获取图片大小
-        String file_path = fileUploadUtils.uploadFile (file);
-
-        // 这里编写获取user_id 将数据写到数据库中
-        User user = jsonSerialization.deserializeFromJson (useInfo, User.class);
-        int fileSave = this.baseMapper.insert (new Files (UUID.randomUUID ( ).toString ( ), fileName, file.getContentType ( ), file.getSize ( ), new Date ( ), user.getId ( ), file_path, ParameterEnum.PIC_PUBLIC.getParameter ( )));
-        if (file_path != "" && fileSave>0) return true;
-        return false;
     }
 }

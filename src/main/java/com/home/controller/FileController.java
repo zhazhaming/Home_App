@@ -26,11 +26,9 @@ public class FileController {
     FilesService filesService;
 
     @PostMapping("/uploadPic")
-    public R<Boolean> uploadPic(@RequestParam("file") MultipartFile file, HttpServletRequest request) throws Exception {
+    public R<String> uploadPic(@RequestParam("file") MultipartFile file) throws Exception {
         LogUtils.info ("进入了文件上传controller层" );
-        String userInfo = (String) request.getAttribute ("userInfo");
-        System.out.println ("useInfo" + userInfo );
-        boolean save = filesService.uploadPic (file, userInfo);
-        return R.ok (save).setCode (ResponMsg.Success.status ( ));
+        String file_path = filesService.uploadPic (file);
+        return R.ok (file_path).setCode (ResponMsg.Success.status ( ));
     }
 }

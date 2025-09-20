@@ -89,8 +89,9 @@ public class RedisUtils {
      *
      * @param key
      */
-    public void del(String key) {
-        redisTemplate.delete(key);
+    public Boolean del(String key) {
+        Boolean delete = redisTemplate.delete (key);
+        return delete;
     }
 
     // String（字符串）
