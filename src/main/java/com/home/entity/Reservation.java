@@ -41,6 +41,22 @@ public class Reservation {
     @TableField("created_at")
     private LocalDateTime createdAt;
 
+    @ApiModelProperty("通知发送时间")
+    @TableField("notified_at")
+    private LocalDateTime notifiedAt;
+
+    @ApiModelProperty("邮件是否发送成功: 0-未发送/1-已发送")
+    @TableField("email_sent")
+    private Integer emailSent;
+
+    @ApiModelProperty("站内消息是否发送成功: 0-未发送/1-已发送")
+    @TableField("message_sent")
+    private Integer messageSent;
+
+    @ApiModelProperty("关联的电影ID(电影上线后)")
+    @TableField("movie_id")
+    private Integer movieId;
+
     public Long getId() {
         return id;
     }
@@ -95,6 +111,38 @@ public class Reservation {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getNotifiedAt() {
+        return notifiedAt;
+    }
+
+    public void setNotifiedAt(LocalDateTime notifiedAt) {
+        this.notifiedAt = notifiedAt;
+    }
+
+    public Integer getEmailSent() {
+        return emailSent;
+    }
+
+    public void setEmailSent(Integer emailSent) {
+        this.emailSent = emailSent;
+    }
+
+    public Integer getMessageSent() {
+        return messageSent;
+    }
+
+    public void setMessageSent(Integer messageSent) {
+        this.messageSent = messageSent;
+    }
+
+    public Integer getMovieId() {
+        return movieId;
+    }
+
+    public void setMovieId(Integer movieId) {
+        this.movieId = movieId;
     }
 }
 

@@ -138,10 +138,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (get_user == null){
             throw new ServiceException (ResponMsg.Success.status ( ), ResponMsg.FILE_FORMAT_ERROR.msg ( ));
         }
-        // 创建对象
+        
+        // 创建更新对象，只设置需要更新的字段
         User user = new User (  );
-        BeanUtils.copyProperties (userUpdateDTO, user);
-        // 校验旧密码
+        user.setId(userUpdateDTO.getId()); // 必须设置ID用于更新
+        
+        // 校验旧密码并设置新密码
         String password = get_user.getPassword ();
         String old_password = userUpdateDTO.getOldPassword ( );
         if (old_password != null){
@@ -151,6 +153,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             }
             user.setPassword (userUpdateDTO.getNewPassword ());
         }
+        
+        // 只更新非空字段，避免覆盖现有数据
+        if (userUpdateDTO.getEmail() != null && !userUpdateDTO.getEmail().trim().isEmpty()) {
+            user.setEmail(userUpdateDTO.getEmail());
+        }
+        if (userUpdateDTO.getPhone() != null && !userUpdateDTO.getPhone().trim().isEmpty()) {
+            user.setPhone(userUpdateDTO.getPhone());
+        }
+        if (userUpdateDTO.getGender() != null) {
+            user.setGender(userUpdateDTO.getGender());
+        }
+        if (userUpdateDTO.getAvatar() != null && !userUpdateDTO.getAvatar().trim().isEmpty()) {
+            user.setAvatar(userUpdateDTO.getAvatar());
+        }
+        
+        // 注意：不更新username字段，避免重复错误
+        
         boolean save = this.updateById (user);
         return save;
     }
@@ -212,6 +231,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = this.getOne (new LambdaQueryWrapper<User> ( ).eq (User::getUsername, userName).eq (User::getPassword, passWord));
         if (user == null) return new User (  );
         return user;
+    }
+
+    @Override
+    public boolean updateUsername(Integer userId, String newUsername) {
+        if (userId == null || newUsername == null || newUsername.trim().isEmpty()) {
+            throw new ServiceException(ResponMsg.PARAMETER_ERROR.status(), "用户ID和用户名不能为空");
+        }
+        
+        // 检查用户名是否已存在（排除当前用户）
+        User existingUser = this.getOne(new LambdaQueryWrapper<User>()
+                .eq(User::getUsername, newUsername.trim())
+                .ne(User::getId, userId));
+        
+        if (existingUser != null) {
+            throw new ServiceException(ResponMsg.USER_REGISTER_FAIL.status(), "用户名已存在，请选择其他用户名");
+        }
+        
+        // 更新用户名
+        User user = new User();
+        user.setId(userId);
+        user.setUsername(newUsername.trim());
+        
+        return this.updateById(user);
     }
 
 }

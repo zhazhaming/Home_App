@@ -34,7 +34,7 @@ public interface MovieService extends IService<Movies> {
 
     public List<Movies> getCategoryMovies(Integer categoryId);
 
-    public List<Movies> getMovieRecent(Integer pageNum, Integer pageSize);
+    public List<Movies> getMovieRecent(Integer pageNum, Integer pageSize) throws Exception;
 
     public List<Movies> getPopularMovie(Integer pageNum, Integer pageSize) throws Exception;
 }

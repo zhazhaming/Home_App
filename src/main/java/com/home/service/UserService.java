@@ -25,4 +25,6 @@ public interface UserService extends IService<User> {
 
     public boolean logout(Integer id);
 
+    public boolean updateUsername(Integer userId, String newUsername);
+
 }

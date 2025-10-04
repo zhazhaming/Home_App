@@ -63,7 +63,11 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
 
     private static String MOVIE_REDIS_POPULAR_KEY = "movie:popular";
 
+    private static String MOVIE_REDIS_RECENT_KEY = "movie:recent";
+
     private static Integer movie_redis_popular_expire_time = 24*60*60;
+
+    private static Integer movie_redis_recent_expire_time = 24*60*60;
 
     /*
         查询所有电影
@@ -266,11 +270,11 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
             LogUtils.info ("Service - Get PoPularMovie From Redis");
             String serialize_porular = redisUtils.get (MOVIE_REDIS_POPULAR_KEY);
             moviesList = jsonSerialization.deserializeFromJson (serialize_porular, List.class);
-            System.out.println (moviesList);
+//            System.out.println (moviesList);
         }else {
             LogUtils.info ("Service - Search PoPularMovie From Database And Set To Redis");
             List<Integer> getPorularIdList = movieDetailMapper.getPopularMovie ();
-            System.out.println (getPorularIdList );
+//            System.out.println (getPorularIdList );
             moviesList = getMovieByIdList (getPorularIdList);
             String serialize_porular = jsonSerialization.serializeToJson (moviesList);
             redisUtils.set (MOVIE_REDIS_POPULAR_KEY, serialize_porular);
@@ -312,19 +316,41 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
         return： List<Movies>
      */
     @Override
-    public List<Movies> getMovieRecent(Integer pageNum, Integer pageSize) {
+    public List<Movies> getMovieRecent(Integer pageNum, Integer pageSize) throws Exception {
         if (pageNum<1 || pageSize< 1){
             pageNum = PageEnum.RECENT_MOVIE.getPageNumber ();
             pageSize = PageEnum.RECENT_MOVIE.getPageSize ();
         }
-        Page<Movies> moviesPage = new Page<> ( pageNum, pageSize );
-        QueryWrapper<Movies> wrapperMovie = new QueryWrapper<Movies>();
-        wrapperMovie.select ().orderByDesc ("date");
-        baseMapper.selectPage (moviesPage, wrapperMovie);
-        List<Movies> movieByTimeList = moviesPage.getRecords ( );
-        if (movieByTimeList.size ()< 1){
-            LogUtils.warn ("Service - Can not search database for Recent Movie, list size is zero");
+        
+        // 构建Redis缓存键，包含分页信息以区分不同的查询结果
+        String recentMovieKey = MOVIE_REDIS_RECENT_KEY + ":" + pageNum + ":" + pageSize;
+        List<Movies> movieByTimeList = new ArrayList<> ();
+        
+        // 先从Redis缓存中获取数据
+        if (redisUtils.keyIsExist (recentMovieKey)){
+            LogUtils.info ("Service - Get Recent Movies From Redis, pageNum:{}, pageSize:{}", pageNum, pageSize);
+            String serialize_recent_movies = redisUtils.get (recentMovieKey);
+            movieByTimeList = jsonSerialization.deserializeFromJson (serialize_recent_movies, List.class);
+        } else {
+            // Redis中不存在数据，从数据库查询
+            LogUtils.info ("Service - Search Recent Movies From Database And Set To Redis, pageNum:{}, pageSize:{}", pageNum, pageSize);
+            Page<Movies> moviesPage = new Page<> ( pageNum, pageSize );
+            QueryWrapper<Movies> wrapperMovie = new QueryWrapper<Movies>();
+            wrapperMovie.select ().orderByDesc ("date");
+            baseMapper.selectPage (moviesPage, wrapperMovie);
+            movieByTimeList = moviesPage.getRecords ( );
+            
+            if (movieByTimeList.size ()< 1){
+                LogUtils.warn ("Service - Can not search database for Recent Movie, list size is zero");
+            } else {
+                // 将查询结果存入Redis，并设置1天过期时间
+                String serialize_recent_movies = jsonSerialization.serializeToJson (movieByTimeList);
+                redisUtils.set (recentMovieKey, serialize_recent_movies);
+                redisUtils.expire (recentMovieKey, movie_redis_recent_expire_time);
+                LogUtils.info ("Service - Recent Movies Stored In Redis With 1 Day Expiration, pageNum:{}, pageSize:{}", pageNum, pageSize);
+            }
         }
+        
         return movieByTimeList;
     }
 

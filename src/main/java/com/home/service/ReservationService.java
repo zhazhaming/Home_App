@@ -32,6 +32,14 @@ public interface ReservationService extends IService<Reservation> {
     List<Reservation> getReservationPageById(Integer userId, Integer page, Integer pageSize) throws Exception;
 
     Integer getTotalReservation(Integer userId);
+
+    /**
+     * 发送电影上线通知
+     * @param title 电影标题
+     * @param movieId 电影ID
+     * @return 发送通知数量
+     */
+    Integer sendMovieOnlineNotifications(String title, Integer movieId) throws Exception;
 }
 
 

@@ -121,7 +121,7 @@ public class MovieController {
     }
 
     @GetMapping("/getMoviesRecent")
-    public R<List<Movies>> getMoviesRecent(@RequestParam Integer pageNum, @RequestParam Integer pageSize){
+    public R<List<Movies>> getMoviesRecent(@RequestParam Integer pageNum, @RequestParam Integer pageSize) throws Exception {
         LogUtils.info ("Access MoviceRecent interface");
         List<Movies> movieRecent = movieService.getMovieRecent (pageNum, pageSize);
         return R.ok (movieRecent).setCode (ResponMsg.Success.status ( ));
@@ -183,12 +183,26 @@ public class MovieController {
     }
 
 
-    // 模拟“新电影上线”触发，实际可在新增电影后调用
+    // 电影上线通知触发接口（增强版）
     @PostMapping("/publishNewMovieOnline")
-    public R<String> publishNewMovieOnline(@RequestParam String title) throws Exception {
-        LogUtils.info("新电影上线触发，标题:{}，开始处理与之匹配的预约", title);
-        int processed = reservationService.consumeReservationForTitle(title);
-        return R.ok("已处理预约条数:" + processed).setCode(ResponMsg.Success.status());
+    public R<String> publishNewMovieOnline(
+            @RequestParam String title,
+            @RequestParam Integer movieId) throws Exception {
+        
+        LogUtils.info("新电影上线触发 - 标题:{}, 电影ID:{}", title, movieId);
+        
+        try {
+            // 调用ReservationService发送通知
+            int notified = reservationService.sendMovieOnlineNotifications(title, movieId);
+            
+            LogUtils.info("电影上线通知处理完成 - 标题:{}, 已发送通知数:{}", title, notified);
+            
+            return R.ok("已发送通知数量:" + notified).setCode(ResponMsg.Success.status());
+            
+        } catch (Exception e) {
+            LogUtils.error("电影上线通知处理失败 - 标题:{}, 错误:{}", title, e.getMessage(), e);
+            return R.failed("通知发送失败: " + e.getMessage());
+        }
     }
 
     @GetMapping("/reservation/status")

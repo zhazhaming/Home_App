@@ -129,11 +129,44 @@
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
 
-        <!--序列号对象-->
+        <!-- 邮件服务 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
+        <!-- Thymeleaf 模板引擎（用于邮件HTML模板） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+
+        <!--序列号对象 - 使用2.9.10版本以兼容Swagger 2.7.0-->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.12.4</version>
+            <version>2.9.10</version>
+        </dependency>
+        
+        <!-- Jackson databind（必需） -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.9.10</version>
+        </dependency>
+        
+        <!-- Jackson annotations -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>2.9.10</version>
+        </dependency>
+        
+        <!-- Jackson Java8时间类型支持 -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>2.9.10</version>
         </dependency>
 
         <!--FastDFS-->

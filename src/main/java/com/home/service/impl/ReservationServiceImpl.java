@@ -216,6 +216,90 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         return reservationList.size ();
     }
 
+    @Override
+    public Integer sendMovieOnlineNotifications(String title, Integer movieId) throws Exception {
+        LogUtils.info("开始发送电影上线通知 - 标题:{}, 电影ID:{}", title, movieId);
+        
+        try {
+            // 1. 查询所有待通知的预约记录（status='PENDING'且标题匹配）
+            String normalizedTitle = normalizeTitle(title);
+            LambdaQueryWrapper<Reservation> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(Reservation::getStatus, "PENDING");
+            List<Reservation> pendingReservations = reservationMapper.selectList(queryWrapper);
+            
+            int sent = 0;
+            
+            // 2. 遍历每个预约，构建通知DTO并发送到MQ
+            for (Reservation reservation : pendingReservations) {
+                String reservationTitle = normalizeTitle(reservation.getTitle());
+                
+                // 标题匹配检查
+                if (reservationTitle.equals(normalizedTitle) || 
+                    reservationTitle.contains(normalizedTitle) || 
+                    normalizedTitle.contains(reservationTitle)) {
+                    
+                    try {
+                        // 构建通知DTO
+                        com.home.entity.DTO.ReservationNotificationDTO notificationDTO = 
+                            new com.home.entity.DTO.ReservationNotificationDTO();
+                        
+                        notificationDTO.setReservationId(reservation.getId());
+                        notificationDTO.setTitle(title); // 使用上线电影的真实标题
+                        notificationDTO.setMovieId(movieId);
+                        notificationDTO.setNotifyEmail(reservation.getNotifyEmail());
+                        notificationDTO.setUserId(reservation.getUserId());
+                        notificationDTO.setUsername(reservation.getUsername());
+                        notificationDTO.setReservationDate(reservation.getCreatedAt());
+                        
+                        // 生成跳转链接（需要注入NotificationConfig）
+                        String actionUrl = buildMovieDetailUrl(movieId);
+                        notificationDTO.setActionUrl(actionUrl);
+                        
+                        // 更新预约记录的movieId
+                        LambdaUpdateWrapper<Reservation> updateWrapper = new LambdaUpdateWrapper<>();
+                        updateWrapper.eq(Reservation::getId, reservation.getId())
+                                    .set(Reservation::getMovieId, movieId);
+                        reservationMapper.update(null, updateWrapper);
+                        
+                        // 发送到RabbitMQ通知队列
+                        String message = jsonSerialization.serializeToJson(notificationDTO);
+                        rabbitTemplate.convertAndSend(
+                            RabbitMQConfig.NOTIFICATION_EXCHANGE,
+                            RabbitMQConfig.NOTIFICATION_ROUTING_KEY,
+                            message
+                        );
+                        
+                        sent++;
+                        LogUtils.info("已发送通知到队列 - 预约ID:{}, 用户:{}, 电影:{}", 
+                            reservation.getId(), reservation.getUsername(), title);
+                            
+                    } catch (Exception e) {
+                        LogUtils.error("发送通知失败 - 预约ID:{}, 错误:{}", 
+                            reservation.getId(), e.getMessage(), e);
+                    }
+                }
+            }
+            
+            LogUtils.info("电影上线通知发送完成 - 标题:{}, 发送数量:{}", title, sent);
+            return sent;
+            
+        } catch (Exception e) {
+            LogUtils.error("发送电影上线通知异常 - 标题:{}, 错误:{}", title, e.getMessage(), e);
+            throw e;
+        }
+    }
+    
+    /**
+     * 构建电影详情页URL
+     */
+    private String buildMovieDetailUrl(Integer movieId) {
+        // 这里使用配置的前端地址
+        // 如果没有注入NotificationConfig，使用默认值
+        String baseUrl = "http://120.78.1.49:7001";
+        String path = "/movie/";
+        return baseUrl + path + movieId;
+    }
+
     /**
      * 同步处理预约消息（供异步调用）
      */
