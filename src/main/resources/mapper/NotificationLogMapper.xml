@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.home.mapper.NotificationLogMapper">
+
+    <!-- 基础结果映射 -->
+    <resultMap id="BaseResultMap" type="com.home.entity.NotificationLog">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="reservation_id" property="reservationId" jdbcType="BIGINT"/>
+        <result column="user_id" property="userId" jdbcType="VARCHAR"/>
+        <result column="notification_type" property="notificationType" jdbcType="VARCHAR"/>
+        <result column="status" property="status" jdbcType="VARCHAR"/>
+        <result column="error_message" property="errorMessage" jdbcType="VARCHAR"/>
+        <result column="retry_count" property="retryCount" jdbcType="INTEGER"/>
+        <result column="sent_at" property="sentAt" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 根据预约ID查询通知日志 -->
+    <select id="selectByReservationId" resultMap="BaseResultMap">
+        SELECT
+            id, reservation_id, user_id, notification_type,
+            status, error_message, retry_count, sent_at
+        FROM notification_log
+        WHERE reservation_id = #{reservationId}
+        ORDER BY sent_at DESC
+    </select>
+
+    <!-- 根据用户ID查询通知日志 -->
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT
+            id, reservation_id, user_id, notification_type,
+            status, error_message, retry_count, sent_at
+        FROM notification_log
+        WHERE user_id = #{userId}
+        ORDER BY sent_at DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 更新重试次数 -->
+    <update id="updateRetryCount">
+        UPDATE notification_log
+        SET retry_count = #{retryCount}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 查询失败的通知日志（用于重试） -->
+    <select id="selectFailedLogs" resultMap="BaseResultMap">
+        SELECT
+            id, reservation_id, user_id, notification_type,
+            status, error_message, retry_count, sent_at
+        FROM notification_log
+        WHERE status = 'FAILED'
+          AND retry_count &lt; #{maxRetryCount}
+        ORDER BY sent_at ASC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+</mapper>
+

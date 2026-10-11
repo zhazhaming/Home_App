@@ -57,4 +57,12 @@ public class MoiveDetailDTO {
 
     private Date date;
 
+    private String type;
+
+    private String pan_url;
+
+    private String play_url;
+
+    private Integer episode;
+
 }

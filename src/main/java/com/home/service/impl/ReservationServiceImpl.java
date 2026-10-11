@@ -1,6 +1,7 @@
 package com.home.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.home.config.NotificationConfig;
 import com.home.config.RabbitMQConfig;
 import com.home.entity.DTO.ReservationRequestDTO;
 import com.home.entity.DTO.CancelReservationRequestDTO;
@@ -54,6 +55,9 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
 
     @Autowired
     private ResponseCache responseCache;
+
+    @Autowired
+    private NotificationConfig notificationConfig;
 
     @Value("${feature.mq.enabled:true}")
     private boolean mqEnabled;
@@ -293,11 +297,8 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
      * 构建电影详情页URL
      */
     private String buildMovieDetailUrl(Integer movieId) {
-        // 这里使用配置的前端地址
-        // 如果没有注入NotificationConfig，使用默认值
-        String baseUrl = "http://120.78.1.49:7001";
-        String path = "/movie/";
-        return baseUrl + path + movieId;
+        // 使用notification.frontend配置生成跳转链接
+        return notificationConfig.getFrontend().buildMovieDetailUrl(movieId);
     }
 
     /**

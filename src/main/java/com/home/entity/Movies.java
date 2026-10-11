@@ -38,4 +38,19 @@ public class Movies {
     @TableField("date")
     private Date date;
 
+    @TableField("type")
+    private String type;
+
+    @TableField("pan_url")
+    private String pan_url;
+
+    @TableField("play_url")
+    private String play_url;
+
+    @TableField("description")
+    private String description;
+
+    @TableField("episode")
+    private Integer episode;
+
 }

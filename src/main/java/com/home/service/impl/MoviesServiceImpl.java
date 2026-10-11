@@ -162,11 +162,22 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
                 BeanUtils.copyProperties(movie_detail, moiveDetailDTO);
                 BeanUtils.copyProperties(movies, moiveDetailDTO);
                 moiveDetailDTO.setMovie_id (id);
+                // 电影优先展示豆瓣简介，不被 movies 表的源站简介覆盖
+                if (movie_detail.getDescription () != null && !movie_detail.getDescription ().isEmpty ()){
+                    moiveDetailDTO.setDescription (movie_detail.getDescription ());
+                }
                 String serialize_movie_detail_dto = jsonSerialization.serializeToJson (moiveDetailDTO);
-                redisUtils.set (movie_key, serialize_movie_detail_dto);
+                // 详情缓存加过期时间，避免爬虫更新简介/集数后一直读到旧缓存
+                redisUtils.set (movie_key, serialize_movie_detail_dto, 24*60*60);
                 LogUtils.info ("Service - MovieDetail Id:{} Stored On Redis", id);
             }else {
                 LogUtils.error ("Service - No movie_detail with ID-{} found", id);
+                // 剧集/动漫/综艺等暂无豆瓣详情，兜底返回基础信息和资源链接，避免详情页空白
+                Movies movies = this.getById (id);
+                if (movies != null){
+                    BeanUtils.copyProperties (movies, moiveDetailDTO);
+                    moiveDetailDTO.setMovie_id (id);
+                }
             }
         }
         if (redisUtils.containsZsetValue (MOVIE_REDIS_ORDER_KEY, id.toString ())){
@@ -407,6 +418,29 @@ public class MoviesServiceImpl extends ServiceImpl<MovieMapper, Movies>  impleme
             Movies movies = getMoviesById (id);
             moviesList.add (movies);
         }
+        return moviesList;
+    }
+
+    /*
+        按资源类型分页查询：movie=电影 tv=连续剧 anime=动漫 variety=综艺
+        return： List<Movies>
+     */
+    @Override
+    public List<Movies> getMoviesByType(String type, Integer pageNum, Integer pageSize) {
+        LogUtils.info ("Service - Get Movie List By Type，type:{}，pageNum:{}，pageSize:{}", type, pageNum, pageSize);
+        Integer typeNumber = this.count (new LambdaQueryWrapper<Movies> ().eq (Movies::getType, type));
+        if (typeNumber == 0) {
+            LogUtils.info ("Service - No movies found for type:{}", type);
+            return new ArrayList<> ( );
+        }
+        Integer movicePageSize = getPageSize (pageSize, typeNumber);
+        Integer pageNumber = getPageNumber (movicePageSize, pageNum, typeNumber);
+        Page<Movies> moviesPage = new Page<> (pageNumber, movicePageSize);
+        QueryWrapper<Movies> wrapperMovie = new QueryWrapper<Movies>();
+        wrapperMovie.select ().eq ("type", type).orderByDesc ("date").orderByDesc ("ID");
+        baseMapper.selectPage (moviesPage, wrapperMovie);
+        List<Movies> moviesList = moviesPage.getRecords ( );
+        LogUtils.info ("Service - Get Movie Size By Type:{}，Data:{}", moviesList.size (), moviesList);
         return moviesList;
     }
 

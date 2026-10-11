@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -125,6 +126,20 @@ public class MovieController {
         LogUtils.info ("Access MoviceRecent interface");
         List<Movies> movieRecent = movieService.getMovieRecent (pageNum, pageSize);
         return R.ok (movieRecent).setCode (ResponMsg.Success.status ( ));
+    }
+
+    @GetMapping("/getByType")
+    public R<List<Movies>> getMoviesByType(@RequestParam String type,
+                                           @RequestParam Integer pageNum,
+                                           @RequestParam Integer pageSize) {
+        LogUtils.info ("用户进入类型资源列表，type:{}，pageNum:{}，pageSize:{}", type, pageNum, pageSize);
+        List<String> allowedTypes = Arrays.asList ("movie", "tv", "anime", "variety");
+        if (!allowedTypes.contains (type)) {
+            LogUtils.error ("用户传入非法资源类型：{}", type);
+            return R.failed ("非法资源类型，仅支持 movie/tv/anime/variety");
+        }
+        List<Movies> moviesList = movieService.getMoviesByType (type, pageNum, pageSize);
+        return R.ok (moviesList).setCode (ResponMsg.Success.status ( ));
     }
 
     @PostMapping("/reservation")
